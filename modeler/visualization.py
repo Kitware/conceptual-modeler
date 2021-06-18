@@ -273,3 +273,8 @@ class VtkViewer:
         self.field_ready = True
 
         self.update_views()
+
+    def update_from_modeler(self):
+        grid_data = self._modeler.state.get("grid")
+        self.update_grid(**grid_data)
+        self.compute()

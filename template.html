@@ -37,10 +37,44 @@
       </v-tooltip>
     </v-btn-toggle>
     <v-spacer />
+    <v-btn
+      tile
+      small
+      icon
+      @click="importShow = !importShow"
+      :color="importShow ? 'primary' : ''"
+    >
+      <v-icon v-text="`$load`" />
+    </v-btn>
     <v-progress-linear indeterminate absolute bottom :active="busy" />
   </v-app-bar>
   <v-main>
-    <!-- floating windows -->
+    <!-- import dialog -->
+    <v-card
+      style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px"
+      v-show="importShow"
+      class="ma-2"
+    >
+      <v-card-text>
+        <v-select
+          v-model="importType"
+          :items="importTypes"
+          label="Data type to import"
+        />
+        <v-file-input
+          v-show="importType"
+          show-size
+          small-chips
+          truncate-length="25"
+          v-model="importFile"
+          dense
+          hide-details
+          accept=".csv,.json,.npy"
+          style="max-width: 300px"
+        />
+      </v-card-text>
+    </v-card>
+    <!-- floating controllers -->
     <div
       style="
         position: absolute;
@@ -437,6 +471,7 @@
         </v-card-actions>
       </v-card>
     </div>
+    <!-- quad view / single -->
     <v-container fluid fill-height class="pa-0" style="position: relative">
       <v-row
         no-gutters
@@ -479,7 +514,6 @@
             :viewState="vtkView3D"
           />
         </v-col>
-
       </v-row>
       <v-row
         no-gutters
