@@ -5,6 +5,7 @@ from osgeo import gdal
 
 # import gempy as gp
 import numpy as np
+import gempy as gp
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -45,6 +46,11 @@ for key in ["stack", "surf"]:
 # -----------------------------------------------------------------------------
 # Helper classes
 # -----------------------------------------------------------------------------
+@unique
+class Feature(Enum):
+    EROSION = "Erosion"
+    FAULT = "Fault"
+    ONLAP = "OnLap"
 
 
 class Grid:
@@ -72,6 +78,9 @@ class AbstractSortedList:
     def __getitem__(self, id):
         if id in self._data:
             return self._data[id]
+
+    def __len__(self):
+        return len(self._ids)
 
     @property
     def selected_id(self):
@@ -139,6 +148,9 @@ class AbstractSortedList:
         self._ids.append(id)
 
     def add(self, name, **kwargs):
+        if not self.allowed_actions(self._active_id).get("add", False):
+            return False
+
         id = next(self._id_generator)
         self._data[id] = self._klass(name, parent=self._parent, **kwargs)
         self._insert_new_id(id)
@@ -146,6 +158,9 @@ class AbstractSortedList:
         return id
 
     def remove(self, id):
+        if not self.allowed_actions(id).get("remove", False):
+            return False
+
         if self._data.pop(id, None):
             self._ids.remove(id)
             if self._active_id == id:
@@ -155,6 +170,9 @@ class AbstractSortedList:
         return False
 
     def up(self, id):
+        if not self.allowed_actions(id).get("up", False):
+            return False
+
         l = self._ids
         index = l.index(id)
         if len(l) > index + 1:
@@ -164,6 +182,9 @@ class AbstractSortedList:
         return False
 
     def down(self, id):
+        if not self.allowed_actions(id).get("down", False):
+            return False
+
         l = self._ids
         index = l.index(id)
         if index > 0:
@@ -197,12 +218,14 @@ class Surfaces(AbstractSortedList):
     def surface(self):
         return self[self.selected_id]
 
+    def allowed_actions(self, id):
+        allowed = super().allowed_actions(id)
 
-@unique
-class Feature(Enum):
-    EROSION = "Erosion"
-    FAULT = "Fault"
-    ONLAP = "OnLap"
+        # A fault can only have 1 surface
+        if self._parent.feature == Feature.FAULT:
+            allowed["add"] = len(self) == 0
+
+        return allowed
 
 
 class Stack:
@@ -232,6 +255,12 @@ class Stacks(AbstractSortedList):
     def stack(self):
         return self[self.selected_id]
 
+    def allowed_actions(self, id):
+        allowed = super().allowed_actions(id)
+        # add more constraints
+
+        return allowed
+
 
 # -----------------------------------------------------------------------------
 # Main class
@@ -245,16 +274,14 @@ class SubSurfaceModeler:
         # state
         self._grid = Grid()
         self._stacks = Stacks()
+        self._has_topology = False
 
         # gempy model
-        # self._model = gp.create_model('conceptual_modeler')
+        self._model = gp.create_model("conceptual_modeler")
         # self._model.add_surfaces('basement')
         # gp.map_stack_to_surfaces(self.geo_model, mapstacks, remove_unused_series=True)
         # self.geo_model.reorder_features(orderStacks)
         # self.geo_model.set_bottom_relation(self.stacks[i]['name'], self.stacks[i-1]['feature'])
-
-        # Update app with our shared state
-        # app.state.update(INITIAL_STATE)
 
         # Expend shared state in app
         app.state.update(self.state)
@@ -265,10 +292,16 @@ class SubSurfaceModeler:
             "features": [a.value for a in Feature],
             "grid": self._grid.html,
             "activeStackId": self._stacks.selected_id,
-            "activeStackActions": self._stacks.allowed_actions(self._stacks.selected_id),
+            "activeStackActions": self._stacks.allowed_actions(
+                self._stacks.selected_id
+            ),
             "stacks": self._stacks.html,
             "surfaces": self._stacks.stack.surfaces.html if self._stacks.stack else [],
-            "activeSurfaceActions": self._stacks.stack.surfaces.allowed_actions(self._stacks.stack.surfaces.selected_id) if self._stacks.stack else {},
+            "activeSurfaceActions": self._stacks.stack.surfaces.allowed_actions(
+                self._stacks.stack.surfaces.selected_id
+            )
+            if self._stacks.stack
+            else {},
             "activeSurfaceId": self._stacks.stack.surfaces.selected_id
             if self._stacks.stack
             else None,
@@ -280,7 +313,7 @@ class SubSurfaceModeler:
             if name in state:
                 self._app.set(name, state[name], force=True)
             else:
-                print(f'Unable to dirty missing key {name}')
+                print(f"Unable to dirty missing key {name}")
 
     # -----------------------------------------------------
     # Grid
@@ -290,6 +323,17 @@ class SubSurfaceModeler:
         self._grid.extent = extent
         self._grid.resolution = resolution
         # update gempy
+        gp.init_data(
+            self._model,
+            extent=extent,
+            resolution=resolution,
+        )
+        gp.set_interpolator(
+            self._model,
+            output=["geology"],
+            theano_optimizer="fast_compile",
+        )
+
         self.dirty("grid")
 
     # -----------------------------------------------------
@@ -338,7 +382,7 @@ class SubSurfaceModeler:
         stack = self._stacks.stack
         if stack and stack.surfaces.selected_id != id:
             stack.surfaces.selected_id = id
-            # self.dirty("points", "orientations")
+            # self.dirty("points", "orientations") ?
             self.dirty("activeSurfaceId")
 
         self.dirty("activeSurfaceActions")
@@ -352,3 +396,40 @@ class SubSurfaceModeler:
             else:
                 surfaces.down(surfaces.selected_id)
             self.dirty("surfaces", "activeSurfaceActions")
+
+    # -----------------------------------------------------
+    # Geometry accessors
+    # -----------------------------------------------------
+
+    def compute_model(self):
+        gp.compute_model(self._model)
+
+    @property
+    def litho(self):
+        resolution = self._model._grid.regular_grid.resolution
+        if len(resolution) != 3:
+            return None
+
+        nx, ny, nz = resolution
+        size = nx * ny * nz
+        array = self._model.solutions.lith_block
+        print("lito size", (nx, ny, nz), size, array.size)
+        if size != array.size:
+            return None
+
+        return array.view().reshape(nx, ny, nz)
+
+    @property
+    def blanking(self):
+        resolution = self._model._grid.regular_grid.resolution
+        if len(resolution) != 3:
+            return None
+
+        nx, ny, nz = resolution
+        size = nx * ny * nz
+        array = self._model._grid.regular_grid.mask_topo
+        print("blanking size", (nx, ny, nz), size, array.size)
+        if size != array.size:
+            return None
+
+        return array.view().reshape(nx, ny, nz)

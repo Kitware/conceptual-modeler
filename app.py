@@ -47,11 +47,15 @@ def activate_surface():
 def update_grid(action, grid):
     # print('trigger::grid', action, grid)
     if action == "save":
-        extent = grid.get("extent")
-        resolution = grid.get("resolution")
+        extent = [float(x) for x in grid.get("extent")]
+        resolution = [int(x) for x in grid.get("resolution")]
         modeler.update_grid(extent, resolution)
         viz.update_grid(extent, resolution)
         workflow.update_grid()
+
+        # extract geometry
+        # modeler.compute_model()
+        viz.compute()
     else:
         # reset client values to server state
         modeler.dirty("grid")
@@ -92,4 +96,5 @@ def ss_remove(type, id):
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    app.on_ready = viz.update_views
     app.run_server()
