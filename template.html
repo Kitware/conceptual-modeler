@@ -250,6 +250,7 @@
                 small
                 color="grey darken-3"
                 @click="trigger('ss_move', ['stack', 'up'])"
+                :disabled="!activeStackActions.up"
               >
                 <v-icon v-text="`$up`" />
               </v-btn>
@@ -259,6 +260,7 @@
                 small
                 color="grey darken-3"
                 @click="trigger('ss_move', ['stack', 'down'])"
+                :disabled="!activeStackActions.down"
               >
                 <v-icon v-text="`$down`" />
               </v-btn>
@@ -269,6 +271,7 @@
                 small
                 color="error"
                 @click="trigger('ss_remove', ['stack', activeStackId])"
+                :disabled="!activeStackActions.remove"
               >
                 <v-icon v-text="`$delete`" />
               </v-btn>
@@ -279,6 +282,7 @@
                 small
                 color="success"
                 @click="activeStackId = ''"
+                :disabled="!activeStackActions.add"
               >
                 <v-icon v-text="`$add`" />
               </v-btn>
@@ -342,28 +346,23 @@
           </v-card-text>
           <v-card-actions class="pa-0 pb-3">
             <v-row dense v-show="!activeSurfaceId" class="mt-3 mx-1">
-              <v-col class="pa-0 pr-1" md="5" no-gutters>
-                <v-text-field
-                  dense
-                  v-model="surfaceNew.name"
-                  label="Name"
-                  hide-details
-                />
-              </v-col>
-              <v-spacer />
-              <v-col class="pa-0 pr-1" md="2" no-gutters>
-                <v-btn
-                  class="float-right"
-                  dense
-                  icon
-                  tile
-                  small
-                  color="success"
-                  @click="trigger('ss_new', ['surface', surfaceNew])"
-                >
-                  <v-icon v-text="`$add`" />
-                </v-btn>
-              </v-col>
+              <v-text-field
+                class="mx-1"
+                dense
+                v-model="surfaceNew.name"
+                label="Name"
+                hide-details
+              />
+              <v-btn
+                class="float-right"
+                dense
+                icon
+                small
+                color="success"
+                @click="trigger('ss_new', ['surface', surfaceNew])"
+              >
+                <v-icon v-text="`$add`" />
+              </v-btn>
             </v-row>
             <v-row dense v-show="activeSurfaceId" class="mt-3 mx-1">
               <v-btn
@@ -372,6 +371,7 @@
                 small
                 color="grey darken-3"
                 @click="trigger('ss_move', ['surface', 'up'])"
+                :disabled="!activeSurfaceActions.up"
               >
                 <v-icon v-text="`$up`" />
               </v-btn>
@@ -381,6 +381,7 @@
                 small
                 color="grey darken-3"
                 @click="trigger('ss_move', ['surface', 'down'])"
+                :disabled="!activeSurfaceActions.down"
               >
                 <v-icon v-text="`$down`" />
               </v-btn>
@@ -391,6 +392,7 @@
                 small
                 color="error"
                 @click="trigger('ss_remove', ['surface', activeSurfaceId])"
+                :disabled="!activeSurfaceActions.remove"
               >
                 <v-icon v-text="`$delete`" />
               </v-btn>
@@ -401,6 +403,7 @@
                 small
                 color="success"
                 @click="activeSurfaceId = null"
+                :disabled="!activeSurfaceActions.add"
               >
                 <v-icon v-text="`$add`" />
               </v-btn>

@@ -119,6 +119,22 @@ class AbstractSortedList:
 
         return results
 
+    def allowed_actions(self, id):
+        actions = {
+            "add": 1,
+            "remove": 0,
+            "up": 0,
+            "down": 0,
+        }
+        if id in self._data:
+            idx = self._ids.index(id)
+            last_idx = len(self._ids) - 1
+            actions["remove"] = 1
+            actions["up"] = int(idx < last_idx)
+            actions["down"] = int(idx > 0)
+
+        return actions
+
     def _insert_new_id(self, id):
         self._ids.append(id)
 
@@ -249,8 +265,10 @@ class SubSurfaceModeler:
             "features": [a.value for a in Feature],
             "grid": self._grid.html,
             "activeStackId": self._stacks.selected_id,
+            "activeStackActions": self._stacks.allowed_actions(self._stacks.selected_id),
             "stacks": self._stacks.html,
             "surfaces": self._stacks.stack.surfaces.html if self._stacks.stack else [],
+            "activeSurfaceActions": self._stacks.stack.surfaces.allowed_actions(self._stacks.stack.surfaces.selected_id) if self._stacks.stack else {},
             "activeSurfaceId": self._stacks.stack.surfaces.selected_id
             if self._stacks.stack
             else None,
@@ -259,7 +277,10 @@ class SubSurfaceModeler:
     def dirty(self, *args):
         state = self.state
         for name in args:
-            self._app.set(name, state[name], force=True)
+            if name in state:
+                self._app.set(name, state[name], force=True)
+            else:
+                print(f'Unable to dirty missing key {name}')
 
     # -----------------------------------------------------
     # Grid
@@ -281,22 +302,22 @@ class SubSurfaceModeler:
 
     def stack_add(self, **kwargs):
         id = self._stacks.add(**kwargs)
-        self.dirty("activeStackId", "stacks")
+        self.dirty("activeStackId", "stacks", "activeStackActions")
 
     def stack_remove(self, id):
         if self._stacks.remove(id):
-            self.dirty("activeStackId", "stacks")
+            self.dirty("activeStackId", "stacks", "activeStackActions")
 
     def stack_select(self, id):
         self._stacks.selected_id = id
-        self.dirty("surfaces", "activeSurfaceId")
+        self.dirty("surfaces", "activeSurfaceId", "activeStackActions")
 
     def stack_move(self, direction):
         if direction == "up":
             self._stacks.up(self._stacks.selected_id)
         else:
             self._stacks.down(self._stacks.selected_id)
-        self.dirty("stacks")
+        self.dirty("stacks", "activeStackActions")
 
     # -----------------------------------------------------
     # Surface
@@ -306,17 +327,21 @@ class SubSurfaceModeler:
         stack = self._stacks.stack
         if stack:
             id = stack.surfaces.add(**kwargs)
-            self.dirty("activeSurfaceId", "surfaces")
+            self.dirty("activeSurfaceId", "surfaces", "activeSurfaceActions")
 
     def surface_remove(self, id):
         stack = self._stacks.stack
         if stack and stack.surfaces.remove(id):
-            self.dirty("activeSurfaceId", "surfaces")
+            self.dirty("activeSurfaceId", "surfaces", "activeSurfaceActions")
 
     def surface_select(self, id):
         stack = self._stacks.stack
-        if stack:
+        if stack and stack.surfaces.selected_id != id:
             stack.surfaces.selected_id = id
+            # self.dirty("points", "orientations")
+            self.dirty("activeSurfaceId")
+
+        self.dirty("activeSurfaceActions")
 
     def surface_move(self, direction):
         stack = self._stacks.stack
@@ -326,4 +351,4 @@ class SubSurfaceModeler:
                 surfaces.up(surfaces.selected_id)
             else:
                 surfaces.down(surfaces.selected_id)
-            self.dirty("surfaces")
+            self.dirty("surfaces", "activeSurfaceActions")
