@@ -3,9 +3,19 @@ class WorkflowManager:
         self._app = app
         self._active_step = "grid"
         self._steps = [
-            {"icon": "mdi-grid", "disabled": False, "value": "grid"},
-            {"icon": "mdi-layers-outline", "disabled": True, "value": "subsurface"},
-            {"icon": "mdi-image-filter-hdr", "disabled": True, "value": "topography"},
+            {"icon": "mdi-grid", "disabled": False, "value": "grid", "label": "Grid"},
+            {
+                "icon": "mdi-layers-outline",
+                "disabled": True,
+                "value": "subsurface",
+                "label": "Sub-surface",
+            },
+            {
+                "icon": "mdi-image-filter-hdr",
+                "disabled": True,
+                "value": "topography",
+                "label": "Topography",
+            },
         ]
         app.state.update(self.state)
 

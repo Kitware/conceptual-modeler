@@ -38,6 +38,11 @@ def activate_surface():
     modeler.surface_select(app.get("activeSurfaceId"))
 
 
+@app.change("vtkCutOrigin")
+def update_slices():
+    viz.update_slice_origin(app.get("vtkCutOrigin"))
+
+
 # -----------------------------------------------------------------------------
 # Method calls
 # -----------------------------------------------------------------------------

@@ -16,6 +16,7 @@ shared_state = {
     # GemPy structures
     # Visualization
     # UI state
+    "viewLayout": "singleView",
 }
 
 vuetify = {

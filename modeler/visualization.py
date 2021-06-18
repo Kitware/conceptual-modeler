@@ -9,6 +9,14 @@ from vtkmodules.vtkRenderingCore import (
 )
 
 
+def slider(min, max, resolution):
+    return {
+        "min": min,
+        "max": max,
+        "step": (max - min) / (resolution - 1),
+    }
+
+
 class ViewView:
     def __init__(self, name="default"):
         self.name = name
@@ -16,6 +24,8 @@ class ViewView:
         self.renderWindow = vtkRenderWindow()
         self.renderWindow.AddRenderer(self.renderer)
         self._scene = {}
+
+        self.renderer.SetBackground(0.2, 0.4, 0.6)
 
     def resetCamera(self):
         self.renderer.ResetCamera()
@@ -59,6 +69,18 @@ class ViewView:
     def view(self):
         return self.renderWindow
 
+    def view2D(self, axis_idx):
+        positon = [0, 0, 0]
+        positon[axis_idx] = -1
+        self.camera.ParallelProjectionOn()
+        self.camera.SetFocalPoint(0, 0, 0)
+        self.camera.SetPosition(positon)
+
+        if axis_idx == 2:
+            self.camera.SetViewUp(0, 1, 0)
+        else:
+            self.camera.SetViewUp(0, 0, 1)
+
 
 class VtkViewer:
     def __init__(self, app, modeler):
@@ -101,7 +123,7 @@ class VtkViewer:
             self._slice_filters[i].SetCutFunction(self._slice_planes[i])
 
         # Views
-        self.update_grid([0, 100, 0, 100, 0, 100], [10, 10, 10])
+        self.update_grid([0, 100, 0, 100, 0, 100], [10, 10, 10], dirty=False)
         self._views = {}
         index = 0
         for key in ["vtkViewX", "vtkViewY", "vtkViewZ", "vtkView3D"]:
@@ -109,6 +131,7 @@ class VtkViewer:
             self._views[key] = view
             if index < len(self._slice_filters):
                 view.add(f"slice{key[-1]}", self._slice_filters[index])
+                view.view2D(index)
             else:
                 item = view.add("grid", self._filter_threshold)
                 item.get("actor").GetProperty().SetEdgeVisibility(1)
@@ -120,6 +143,8 @@ class VtkViewer:
 
     @property
     def state(self):
+        bounds = self._grid.GetBounds()
+        resolutions = self.resolutions
         return {
             "vtkCutOrigin": tuple(self._slice_planes[0].GetOrigin()),
             "vtkView3D": self._app.scene(self._views["vtkView3D"].view),
@@ -127,6 +152,34 @@ class VtkViewer:
             "vtkViewY": self._app.scene(self._views["vtkViewY"].view),
             "vtkViewZ": self._app.scene(self._views["vtkViewZ"].view),
             "vtkBounds": self._grid.GetBounds(),
+            "sliderX": slider(bounds[0], bounds[1], resolutions[0]),
+            "sliderY": slider(bounds[2], bounds[3], resolutions[1]),
+            "sliderZ": slider(bounds[4], bounds[5], resolutions[2]),
+            "interaction2D": [
+                {
+                    "button": 1,
+                    "action": "Pan",
+                },
+                {
+                    "button": 2,
+                    "action": "Zoom",
+                },
+                {
+                    "button": 3,
+                    "action": "Zoom",
+                    "scrollEnabled": True,
+                },
+                {
+                    "button": 1,
+                    "action": "ZoomToMouse",
+                    "shift": True,
+                },
+                {
+                    "button": 1,
+                    "action": "ZoomToMouse",
+                    "alt": True,
+                },
+            ],
         }
 
     def dirty(self, *args):
@@ -142,16 +195,18 @@ class VtkViewer:
             self._app.set(key, self._app.scene(self._views[key].view))
 
     @property
-    def resolution(self):
+    def resolutions(self):
         dims = self._grid.GetDimensions()
         return (dims[0] - 1, dims[1] - 1, dims[2] - 1)
 
-    def update_slice_origin(self, origin):
+    def update_slice_origin(self, origin, dirty=True):
         for plane in self._slice_planes:
             plane.SetOrigin(origin)
-        self.update_views()
 
-    def update_grid(self, extent, resolution):
+        if dirty:
+            self.update_views()
+
+    def update_grid(self, extent, resolution, dirty=True):
         self._grid.SetDimensions(
             resolution[0] + 1, resolution[1] + 1, resolution[2] + 1
         )
@@ -170,6 +225,20 @@ class VtkViewer:
         self._blank_field.SetNumberOfTuples(self._grid.GetNumberOfCells())
         self._blank_field.Fill(0)
 
+        # Update sliders
+        bounds = self._grid.GetBounds()
+        self.update_slice_origin(
+            [
+                (bounds[0] + bounds[1]) * 0.5,
+                (bounds[2] + bounds[3]) * 0.5,
+                (bounds[4] + bounds[5]) * 0.5,
+            ],
+            dirty=dirty,
+        )
+
+        if dirty:
+            self.dirty("sliderX", "sliderY", "sliderZ")
+
     def compute(self):
         # Update VTK mesh
         self._blank_field.Fill(0)
@@ -180,7 +249,7 @@ class VtkViewer:
         blanking = self._modeler.blanking
 
         if litho:
-            i_max, j_max, k_max = self.resolution
+            i_max, j_max, k_max = self.resolutions
             if blanking:
                 index = 0
                 for k in range(k_max):
