@@ -1,14 +1,17 @@
 import os
 from pywebvue import App
-from modeler.SharedState import shared_state
-from modeler.GemPy import GemPyModeler
-from modeler.Visualization import VtkViewer
+from modeler.config import shared_state, vuetify, DEFAULT_NEW
+from modeler.subsurface import SubSurfaceModeler
+from modeler.workflow import WorkflowManager
+from modeler.visualization import VtkViewer
 
 # -----------------------------------------------------------------------------
 # Web App setup
 # -----------------------------------------------------------------------------
 
-app = App("Conceptual Modeler", backend="vtk", debug=False)
+app = App("Conceptual Modeler", backend="vtk", debug=True)
+app.state = shared_state
+app.vuetify = vuetify
 app.layout = "./template.html"
 app.vue_use = ["vuetify", "vtk"]
 
@@ -16,16 +19,87 @@ app.vue_use = ["vuetify", "vtk"]
 # Server setup
 # -----------------------------------------------------------------------------
 
-modeler = GemPyModeler(app)
+modeler = SubSurfaceModeler(app)
+workflow = WorkflowManager(app)
 viz = VtkViewer(app, modeler)
 
 # -----------------------------------------------------------------------------
 # Callbacks
 # -----------------------------------------------------------------------------
 
+
+@app.change("activeStackId")
+def activate_stack():
+    modeler.stack_select(app.get("activeStackId"))
+
+
+@app.change("activeSurfaceId")
+def activate_surface():
+    modeler.surface_select(app.get("activeSurfaceId"))
+
+
+@app.change("vtkCutOrigin")
+def update_slices():
+    viz.update_slice_origin(app.get("vtkCutOrigin"))
+
+
+# -----------------------------------------------------------------------------
+# Method calls
+# -----------------------------------------------------------------------------
+
+
+@app.trigger("grid")
+def update_grid(action, grid):
+    # print('trigger::grid', action, grid)
+    if action == "save":
+        extent = [float(x) for x in grid.get("extent")]
+        resolution = [int(x) for x in grid.get("resolution")]
+        modeler.update_grid(extent, resolution)
+        viz.update_grid(extent, resolution)
+        workflow.update_grid()
+
+        # extract geometry
+        # modeler.compute_model()
+        viz.compute()
+    else:
+        # reset client values to server state
+        modeler.dirty("grid")
+
+
+@app.trigger("ss_move")
+def ss_move(type, direction):
+    # print('trigger::ss_move', type, direction)
+    if type == "stack":
+        modeler.stack_move(direction)
+    elif type == "surface":
+        modeler.surface_move(direction)
+
+
+@app.trigger("ss_new")
+def ss_new(type, data):
+    # print('trigger::ss_new', type, data)
+    if type == "stack":
+        modeler.stack_add(**data)
+    elif type == "surface":
+        modeler.surface_add(**data)
+
+    # Reset placeholder for client
+    app.set(f"{type}New", DEFAULT_NEW[type], force=True)
+
+
+@app.trigger("ss_remove")
+def ss_remove(type, id):
+    # print('trigger::ss_remove', id)
+    if type == "stack":
+        modeler.stack_remove(id)
+    elif type == "surface":
+        modeler.surface_remove(id)
+
+
 # -----------------------------------------------------------------------------
 # CLI
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    app.on_ready = viz.update_views
     app.run_server()

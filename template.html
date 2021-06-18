@@ -1,0 +1,551 @@
+<v-app>
+  <v-app-bar app dense>
+    <span class="title">Conceptual Modeler</span>
+    <v-spacer />
+    <v-btn-toggle v-model="activeStep" dense>
+      <v-tooltip bottom v-for="item, idx in steps" :key="idx">
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+            :value="item.value"
+            :disabled="item.disabled"
+            small
+          >
+            <v-icon v-text="item.icon" />
+          </v-btn>
+        </template>
+        <span>{{ item.label }}</span>
+      </v-tooltip>
+    </v-btn-toggle>
+    <v-btn-toggle dense required v-model="viewLayout" class="ml-6">
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn small value="singleView" v-bind="attrs" v-on="on">
+            <v-icon v-text="`$singleView`" />
+          </v-btn>
+        </template>
+        <span>Single 3D view</span>
+      </v-tooltip>
+      <v-tooltip bottom>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn small value="multiView" v-bind="attrs" v-on="on">
+            <v-icon v-text="`$multiView`" />
+          </v-btn>
+        </template>
+        <span>Multi views</span>
+      </v-tooltip>
+    </v-btn-toggle>
+    <v-spacer />
+    <v-progress-linear indeterminate absolute bottom :active="busy" />
+  </v-app-bar>
+  <v-main>
+    <!-- floating windows -->
+    <div
+      style="
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 1;
+        width: 300px;
+        overflow: auto;
+        max-height: 100%;
+        scrollbar-width: none;
+      "
+    >
+      <!-- grid -->
+      <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'grid'">
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$grid`" />
+          Grid
+          <v-spacer />
+          <v-btn dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$load`" />
+            <input
+              type="file"
+              ref="fileSelector"
+              v-show="false"
+              name="csvToUpload"
+            />
+          </v-btn>
+        </v-card-title>
+        <v-card-text class="pb-0 mb-n2">
+          <v-col dense cols="12" class="pt-4">
+            <v-row
+              class="pl-2 pt-2 ml-n5 rounded"
+              style="border-left: solid 2px #546e7a"
+            >
+              <v-tooltip right>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-row dense v-bind="attrs" v-on="on">
+                    <v-col class="pb-0" cols="6">
+                      <v-text-field
+                        dense
+                        label="X min"
+                        v-model="grid.extent[0]"
+                      />
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        dense
+                        label="X max"
+                        v-model="grid.extent[1]"
+                      />
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        dense
+                        label="Y min"
+                        v-model="grid.extent[2]"
+                      />
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        dense
+                        label="Y max"
+                        v-model="grid.extent[3]"
+                      />
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        dense
+                        label="Z min"
+                        v-model="grid.extent[4]"
+                      />
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        dense
+                        label="Z max"
+                        v-model="grid.extent[5]"
+                      />
+                    </v-col>
+                  </v-row>
+                </template>
+                <span>Extent</span>
+              </v-tooltip>
+            </v-row>
+            <v-row
+              class="mt-4 pl-2 pt-2 ml-n5 rounded"
+              style="border-left: solid 2px #546e7a"
+            >
+              <v-tooltip right>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-row dense v-bind="attrs" v-on="on">
+                    <v-col cols="12" sm="4">
+                      <v-text-field
+                        dense
+                        label="NX"
+                        v-model="grid.resolution[0]"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-text-field
+                        dense
+                        label="NY"
+                        v-model="grid.resolution[1]"
+                      />
+                    </v-col>
+                    <v-col cols="12" sm="4">
+                      <v-text-field
+                        dense
+                        label="NZ"
+                        v-model="grid.resolution[2]"
+                      />
+                    </v-col>
+                  </v-row>
+                </template>
+                <span>Resolution</span>
+              </v-tooltip>
+            </v-row>
+          </v-col>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            class="ma-0"
+            dense
+            small
+            icon
+            tile
+            @click="trigger('grid', ['cancel', grid])"
+          >
+            <v-icon color="error" v-text="`$cancel`" />
+          </v-btn>
+          <v-btn
+            class="ma-0"
+            color="apply"
+            dense
+            small
+            icon
+            tile
+            @click="trigger('grid', ['save', grid])"
+          >
+            <v-icon color="success" v-text="`$apply`" />
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+      <!-- Stack -->
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$stacks`" />
+          Stacks
+          <v-spacer />
+          <v-btn dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$load`" />
+            <input
+              type="file"
+              ref="fileSelector"
+              v-show="false"
+              name="csvToUpload"
+            />
+          </v-btn>
+        </v-card-title>
+        <v-card-text class="pb-0 mb-n2 px-0">
+          <v-list dense>
+            <v-list-item
+              v-for="(stack, index) in stacks"
+              :key="index"
+              :value="stack.id"
+              :class="{ 'v-item--active v-list-item--active': stack.id === activeStackId }"
+              @click="activeStackId = stack.id"
+              color="primary"
+            >
+              <v-list-item-icon v-if="stack.feature === 'Fault'">
+                <v-icon class="float-left" v-text="`$faults`" />
+              </v-list-item-icon>
+              <v-list-item-icon v-else-if="stack.feature === 'Onlap'">
+                <v-icon class="float-left" v-text="`$onlaps`" />
+              </v-list-item-icon>
+              <v-list-item-icon v-else>
+                <v-icon class="float-left" v-text="`$surfaces`" />
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title v-text="stack.name" />
+              </v-list-item-content>
+              <v-list-item-icon>
+                <v-icon class="float-right" x-small v-text="stack.feature" />
+              </v-list-item-icon>
+            </v-list-item>
+          </v-list>
+          <v-divider class="mb-2" />
+        </v-card-text>
+        <v-card-actions class="pa-0">
+          <v-row dense v-show="!activeStackId" class="mt-3 mx-1">
+            <v-text-field
+              class="mx-1"
+              dense
+              v-model="stackNew.name"
+              label="Name"
+              hide-details
+              style="max-width: 40%"
+            />
+            <v-select
+              class="mx-1"
+              dense
+              :items="features"
+              label="Feature Type"
+              v-model="stackNew.feature"
+              style="max-width: 40%"
+            />
+            <v-spacer />
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="trigger('ss_new', ['stack', stackNew])"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-row>
+          <v-row dense v-show="activeStackId" class="mt-3 mb-3 mx-1">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['stack', 'up'])"
+              :disabled="!activeStackActions.up"
+            >
+              <v-icon v-text="`$up`" />
+            </v-btn>
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['stack', 'down'])"
+              :disabled="!activeStackActions.down"
+            >
+              <v-icon v-text="`$down`" />
+            </v-btn>
+            <v-spacer />
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['stack', activeStackId])"
+              :disabled="!activeStackActions.remove"
+            >
+              <v-icon v-text="`$delete`" />
+            </v-btn>
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activeStackId = ''"
+              :disabled="!activeStackActions.add"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-row>
+        </v-card-actions>
+      </v-card>
+      <!-- Surfaces -->
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$surfaces`" />
+          Surfaces
+          <v-spacer />
+          <v-btn dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$load`" />
+            <input
+              type="file"
+              ref="fileSelector"
+              v-show="false"
+              name="csvToUpload"
+            />
+          </v-btn>
+        </v-card-title>
+        <v-card-text class="pb-0 mb-n2 px-0">
+          <v-list dense>
+            <v-list-item
+              v-for="(surface, index) in surfaces"
+              :key="surface.id"
+              :value="surface.id"
+              :class="{ 'v-item--active v-list-item--active': surface.id === activeSurfaceId }"
+              @click="activeSurfaceId = surface.id"
+              color="primary"
+            >
+              <v-list-item-icon v-if="surface.feature === 'Fault'">
+                <v-icon class="float-left" v-text="`$fault`" />
+              </v-list-item-icon>
+              <v-list-item-icon v-else-if="surface.feature === 'Onlap'">
+                <v-icon class="float-left" v-text="`$onlap`" />
+              </v-list-item-icon>
+              <v-list-item-icon v-else>
+                <v-icon class="float-left" v-text="`$surface`" />
+              </v-list-item-icon>
+              <v-list-item-content>
+                <v-list-item-title v-text="surface.name" />
+              </v-list-item-content>
+              <v-list-item-icon>
+                <v-icon
+                  class="float-right"
+                  x-small
+                  v-text="surface.stackname"
+                />
+              </v-list-item-icon>
+            </v-list-item>
+          </v-list>
+          <v-divider class="mb-2" />
+        </v-card-text>
+        <v-card-actions class="pa-0 pb-3">
+          <v-row dense v-show="!activeSurfaceId" class="mt-3 mx-1">
+            <v-text-field
+              class="mx-1"
+              dense
+              v-model="surfaceNew.name"
+              label="Name"
+              hide-details
+            />
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="trigger('ss_new', ['surface', surfaceNew])"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-row>
+          <v-row dense v-show="activeSurfaceId" class="mt-3 mx-1">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['surface', 'up'])"
+              :disabled="!activeSurfaceActions.up"
+            >
+              <v-icon v-text="`$up`" />
+            </v-btn>
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['surface', 'down'])"
+              :disabled="!activeSurfaceActions.down"
+            >
+              <v-icon v-text="`$down`" />
+            </v-btn>
+            <v-spacer />
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['surface', activeSurfaceId])"
+              :disabled="!activeSurfaceActions.remove"
+            >
+              <v-icon v-text="`$delete`" />
+            </v-btn>
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activeSurfaceId = null"
+              :disabled="!activeSurfaceActions.add"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-row>
+        </v-card-actions>
+      </v-card>
+    </div>
+    <v-container fluid fill-height class="pa-0" style="position: relative">
+      <v-row
+        no-gutters
+        class="ma-0"
+        :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }"
+      >
+        <v-col v-show="viewLayout !== 'singleView'" style="position: relative">
+          <v-slider
+            label="X"
+            style="
+              position: absolute;
+              z-index: 1;
+              left: 10px;
+              right: 10px;
+              bottom: 0;
+            "
+            dense
+            hide-details
+            color="red"
+            track-color="red"
+            v-bind="sliderX"
+            v-model="vtkCutOrigin[0]"
+            @input="dirty('vtkCutOrigin')"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewX"
+            :wsClient="wsClient"
+            :viewState="vtkViewX"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
+        </v-col>
+        <v-col>
+          <vtk-sync-view
+            ref="vtkView3D"
+            :wsClient="wsClient"
+            :viewState="vtkView3D"
+          />
+        </v-col>
+
+      </v-row>
+      <v-row
+        no-gutters
+        class="ma-0"
+        :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }"
+        v-show="viewLayout !== 'singleView'"
+        style="border-top: 1px solid #333"
+      >
+        <v-col style="position: relative">
+          <v-slider
+            label="Y"
+            style="
+              position: absolute;
+              z-index: 1;
+              left: 10px;
+              right: 10px;
+              bottom: 0;
+            "
+            dense
+            hide-details
+            color="yellow"
+            track-color="yellow"
+            v-bind="sliderY"
+            v-model="vtkCutOrigin[1]"
+            @input="dirty('vtkCutOrigin')"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewY"
+            :wsClient="wsClient"
+            :viewState="vtkViewY"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
+        </v-col>
+        <v-col style="position: relative">
+          <v-slider
+            label="Z"
+            style="
+              position: absolute;
+              z-index: 1;
+              left: 10px;
+              right: 10px;
+              bottom: 0;
+            "
+            dense
+            hide-details
+            color="green"
+            track-color="green"
+            v-bind="sliderZ"
+            v-model="vtkCutOrigin[2]"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewZ"
+            :wsClient="wsClient"
+            :viewState="vtkViewZ"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
+        </v-col>
+      </v-row>
+    </v-container>
+  </v-main>
+</v-app>
