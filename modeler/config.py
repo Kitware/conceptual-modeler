@@ -11,8 +11,13 @@ shared_state = {
     "stackNew": DEFAULT_NEW_STACK,
     "surfaceNew": DEFAULT_NEW_SURFACE,
     # Handling data injestion
+    "importShow": False,
     "importFile": None,
     "importType": None,
+    "importTypes": [
+        {"text": "Full Conceptual Modeler state", "value": "model.json"},
+        {"text": "Grid as CSV", "value": "grid.csv"},
+    ],
     # GemPy structures
     # Visualization
     # UI state

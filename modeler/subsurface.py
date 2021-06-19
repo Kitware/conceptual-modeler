@@ -1,3 +1,4 @@
+import time
 from enum import Enum, unique
 
 # Added to fix gdal 3.3.0 error
@@ -6,6 +7,7 @@ from osgeo import gdal
 # import gempy as gp
 import numpy as np
 import gempy as gp
+from . import importer
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -289,6 +291,7 @@ class SubSurfaceModeler:
     @property
     def state(self):
         return {
+            "subsurfaceImportTS": 0,
             "features": [a.value for a in Feature],
             "grid": self._grid.html,
             "activeStackId": self._stacks.selected_id,
@@ -433,3 +436,22 @@ class SubSurfaceModeler:
             return None
 
         return array.view().reshape(nx, ny, nz)
+
+    # -----------------------------------------------------
+    # Import / Export data
+    # -----------------------------------------------------
+
+    def import_data(self, data_type, file_data):
+        # print(f'{data_type}: {" ".join(file_data.keys())}')
+        file_bytes = file_data.get("content")
+        # file_name = file_data.get("name")
+        # file_size = file_data.get("size")
+
+        if data_type == "grid.csv":
+            grid_data = importer.parse_grid_csv(file_bytes)
+            if grid_data:
+                self.dirty("grid")  # update client first
+                self.update_grid(**grid_data)
+                self._app.set("subsurfaceImportTS", time.time())
+        else:
+            print(f"Do not know how to handle type: {data_type}")

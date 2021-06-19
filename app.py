@@ -43,6 +43,24 @@ def update_slices():
     viz.update_slice_origin(app.get("vtkCutOrigin"))
 
 
+@app.change("importType")
+def reset_file():
+    app.set("importFile", None)
+
+
+@app.change("importFile")
+def import_file():
+    data_type = app.get("importType")
+    file_data = app.get("importFile")
+    if file_data:
+        modeler.import_data(data_type, file_data)
+
+
+@app.change("subsurfaceImportTS")
+def modeler_state_changed():
+    viz.update_from_modeler()
+
+
 # -----------------------------------------------------------------------------
 # Method calls
 # -----------------------------------------------------------------------------
