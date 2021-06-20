@@ -30,12 +30,12 @@ viz = VtkViewer(app, modeler)
 
 @app.change("activeStackId")
 def activate_stack():
-    modeler.stack_select(app.get("activeStackId"))
+    modeler.select("Stack", app.get("activeStackId"))
 
 
 @app.change("activeSurfaceId")
 def activate_surface():
-    modeler.surface_select(app.get("activeSurfaceId"))
+    modeler.select("Surface", app.get("activeSurfaceId"))
 
 
 @app.change("vtkCutOrigin")
@@ -73,7 +73,7 @@ def update_grid(action, grid):
         extent = [float(x) for x in grid.get("extent")]
         resolution = [int(x) for x in grid.get("resolution")]
         modeler.update_grid(extent, resolution)
-        viz.update_grid(extent, resolution)
+        viz.update_grid()
         workflow.update_grid()
 
         # extract geometry
@@ -86,32 +86,19 @@ def update_grid(action, grid):
 
 @app.trigger("ss_move")
 def ss_move(type, direction):
-    # print('trigger::ss_move', type, direction)
-    if type == "stack":
-        modeler.stack_move(direction)
-    elif type == "surface":
-        modeler.surface_move(direction)
+    modeler.move(type, direction)
 
 
 @app.trigger("ss_new")
 def ss_new(type, data):
-    # print('trigger::ss_new', type, data)
-    if type == "stack":
-        modeler.stack_add(**data)
-    elif type == "surface":
-        modeler.surface_add(**data)
-
+    modeler.add(type, data)
     # Reset placeholder for client
-    app.set(f"{type}New", DEFAULT_NEW[type], force=True)
+    app.set(f"{type.lower()}New", DEFAULT_NEW[type], force=True)
 
 
 @app.trigger("ss_remove")
 def ss_remove(type, id):
-    # print('trigger::ss_remove', id)
-    if type == "stack":
-        modeler.stack_remove(id)
-    elif type == "surface":
-        modeler.surface_remove(id)
+    modeler.remove(type, id)
 
 
 # -----------------------------------------------------------------------------

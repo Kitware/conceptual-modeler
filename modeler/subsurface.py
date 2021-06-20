@@ -41,10 +41,6 @@ def create_id_generator(prefix):
         count += 1
 
 
-ID_GENERATORS = {}
-for key in ["stack", "surf"]:
-    ID_GENERATORS[key] = create_id_generator(key)
-
 # -----------------------------------------------------------------------------
 # Helper classes
 # -----------------------------------------------------------------------------
@@ -69,9 +65,8 @@ class Grid:
 
 
 class AbstractSortedList:
-    def __init__(self, prefix, klass, parent=None):
+    def __init__(self, klass, parent=None):
         self._parent = parent
-        self._id_generator = ID_GENERATORS[prefix]
         self._klass = klass
         self._ids = []
         self._data = {}
@@ -153,11 +148,11 @@ class AbstractSortedList:
         if not self.allowed_actions(self._active_id).get("add", False):
             return False
 
-        id = next(self._id_generator)
-        self._data[id] = self._klass(name, parent=self._parent, **kwargs)
-        self._insert_new_id(id)
-        self._active_id = id
-        return id
+        item = self._klass(name, parent=self._parent, **kwargs)
+        self._data[item.id] = item
+        self._insert_new_id(item.id)
+        self._active_id = item.id
+        return item
 
     def remove(self, id):
         if not self.allowed_actions(id).get("remove", False):
@@ -195,9 +190,18 @@ class AbstractSortedList:
 
         return False
 
+    def export_state(self, depth=-1):
+        results = []
+        for id in self._ids:
+            results.append(self[id].export_state(depth - 1))
+        return results
+
 
 class Surface:
+    id_generator = create_id_generator("Surface")
+
     def __init__(self, name, parent=None, **kwargs):
+        self.id = next(Surface.id_generator)
         self.name = name
         self.points = []
         self.orientations = []
@@ -206,15 +210,22 @@ class Surface:
     @property
     def html(self):
         return {
+            "id": self.id,
             "name": self.name,
             "feature": self.stack.feature.value,
             "stackname": self.stack.name,
         }
 
+    def export_state(self, depth=-1):
+        return {
+            "id": self.id,
+            "name": self.name,
+        }
+
 
 class Surfaces(AbstractSortedList):
     def __init__(self, parent):
-        super().__init__("surf", Surface, parent)
+        super().__init__(Surface, parent)
 
     @property
     def surface(self):
@@ -231,7 +242,10 @@ class Surfaces(AbstractSortedList):
 
 
 class Stack:
+    id_generator = create_id_generator("Stack")
+
     def __init__(self, name, feature=Feature.EROSION, **kwargs):
+        self.id = next(Stack.id_generator)
         self.name = name
         self.surfaces = Surfaces(self)
 
@@ -247,10 +261,22 @@ class Stack:
             "feature": self.feature.value,
         }
 
+    def export_state(self, depth=-1):
+        out = {
+            "id": self.id,
+            "name": self.name,
+            "feature": self.feature.value,
+        }
+
+        if depth:
+            out["surfaces"] = self.surfaces.export_state(depth - 1)
+
+        return out
+
 
 class Stacks(AbstractSortedList):
     def __init__(self):
-        super().__init__("stack", Stack)
+        super().__init__(Stack)
         self.add("basement", feature=Feature.EROSION)
 
     @property
@@ -265,6 +291,91 @@ class Stacks(AbstractSortedList):
 
 
 # -----------------------------------------------------------------------------
+# State Manager
+# -----------------------------------------------------------------------------
+
+
+class StateManager:
+    def __init__(self):
+        self.grid = Grid()
+        self.stacks = Stacks()
+
+    def __getitem__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+
+    @property
+    def client_state(self):
+        return {
+            "subsurfaceImportTS": 0,
+            "features": [a.value for a in Feature],
+            "grid": self.grid.html,
+            "activeStackId": self.stacks.selected_id,
+            "activeStackActions": self.stacks.allowed_actions(self.stacks.selected_id),
+            "stacks": self.stacks.html,
+            "surfaces": self.stacks.stack.surfaces.html if self.stacks.stack else [],
+            "activeSurfaceActions": self.stacks.stack.surfaces.allowed_actions(
+                self.stacks.stack.surfaces.selected_id
+            )
+            if self.stacks.stack
+            else {},
+            "activeSurfaceId": self.stacks.stack.surfaces.selected_id
+            if self.stacks.stack
+            else None,
+        }
+
+    def move(self, type, direction):
+        active_stack = self.stacks.stack
+        if active_stack:
+            if type == "Stack":
+                if direction == "up":
+                    return self.stacks.up(active_stack.id)
+                else:
+                    return self.stacks.down(active_stack.id)
+            elif type == "Surface":
+                active_surface = active_stack.surfaces.surface
+                if direction == "up":
+                    return active_stack.surfaces.up(active_surface.id)
+                else:
+                    return active_stack.surfaces.down(active_surface.id)
+
+    def add(self, type, data):
+        if type == "Stack":
+            return self.stacks.add(**data)
+        elif type == "Surface" and self.stacks.stack:
+            return self.stacks.stack.surfaces.add(**data)
+
+    def remove(self, type, id):
+        if type == "Stack":
+            return self.stacks.remove(id)
+        elif type == "Surface" and self.stacks.stack:
+            return self.stacks.stack.surfaces.remove(id)
+
+    def select(self, type, id):
+        change_detected = False
+        if type == "Stack":
+            change_detected = self.stacks.selected_id != id
+            self.stacks.selected_id = id
+        elif type == "Surface" and self.stacks.stack:
+            change_detected = self.stacks.stack.surfaces.selected_id != id
+            self.stacks.stack.surfaces.selected_id = id
+
+        return change_detected
+
+    def import_state(self, type, state):
+        pass
+
+    def export_state(self, depth=-1):
+        return {
+            "version": 1,
+            "origin": "https://github.com/Kitware/conceptual-modeler",
+            "type": "conceptual-modeler-full",
+            "grid": self.grid.export_state(depth),
+            "stacks": self.stacks.export_state(depth),
+        }
+
+
+# -----------------------------------------------------------------------------
 # Main class
 # -----------------------------------------------------------------------------
 
@@ -272,13 +383,10 @@ class Stacks(AbstractSortedList):
 class SubSurfaceModeler:
     def __init__(self, app):
         self._app = app
-
-        # state
-        self._grid = Grid()
-        self._stacks = Stacks()
-        self._has_topology = False
+        self._state_handler = StateManager()
 
         # gempy model
+        self._has_topology = False
         self._model = gp.create_model("conceptual_modeler")
         # self._model.add_surfaces('basement')
         # gp.map_stack_to_surfaces(self.geo_model, mapstacks, remove_unused_series=True)
@@ -286,45 +394,29 @@ class SubSurfaceModeler:
         # self.geo_model.set_bottom_relation(self.stacks[i]['name'], self.stacks[i-1]['feature'])
 
         # Expend shared state in app
-        app.state.update(self.state)
-
-    @property
-    def state(self):
-        return {
-            "subsurfaceImportTS": 0,
-            "features": [a.value for a in Feature],
-            "grid": self._grid.html,
-            "activeStackId": self._stacks.selected_id,
-            "activeStackActions": self._stacks.allowed_actions(
-                self._stacks.selected_id
-            ),
-            "stacks": self._stacks.html,
-            "surfaces": self._stacks.stack.surfaces.html if self._stacks.stack else [],
-            "activeSurfaceActions": self._stacks.stack.surfaces.allowed_actions(
-                self._stacks.stack.surfaces.selected_id
-            )
-            if self._stacks.stack
-            else {},
-            "activeSurfaceId": self._stacks.stack.surfaces.selected_id
-            if self._stacks.stack
-            else None,
-        }
+        app.state.update(self._state_handler.client_state)
 
     def dirty(self, *args):
-        state = self.state
+        # print('dirty', *args)
+        state = self._state_handler.client_state
+        # print('==> ok')
         for name in args:
             if name in state:
                 self._app.set(name, state[name], force=True)
             else:
                 print(f"Unable to dirty missing key {name}")
 
+    @property
+    def state_handler(self):
+        return self._state_handler
+
     # -----------------------------------------------------
     # Grid
     # -----------------------------------------------------
 
     def update_grid(self, extent, resolution):
-        self._grid.extent = extent
-        self._grid.resolution = resolution
+        self._state_handler.grid.extent = extent
+        self._state_handler.grid.resolution = resolution
         # update gempy
         gp.init_data(
             self._model,
@@ -340,65 +432,37 @@ class SubSurfaceModeler:
         self.dirty("grid")
 
     # -----------------------------------------------------
-    # Stack
+    # State mutation
     # -----------------------------------------------------
 
-    @property
-    def stack(self):
-        return self._stacks
+    def add(self, type, data):
+        """type@html: Stack, Surface, Point, Orientation"""
+        if self._state_handler.add(type, data):
+            self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
 
-    def stack_add(self, **kwargs):
-        id = self._stacks.add(**kwargs)
-        self.dirty("activeStackId", "stacks", "activeStackActions")
+    def remove(self, type, id):
+        """type@html: Stack, Surface, Point, Orientation"""
+        if self._state_handler.remove(type, id):
+            self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
 
-    def stack_remove(self, id):
-        if self._stacks.remove(id):
-            self.dirty("activeStackId", "stacks", "activeStackActions")
+    def select(self, type, id):
+        """type@app: Stack, Surface, Point, Orientation"""
+        dirty_list = []
+        change_detected = self._state_handler.select(type, id)
 
-    def stack_select(self, id):
-        self._stacks.selected_id = id
-        self.dirty("surfaces", "activeSurfaceId", "activeStackActions")
+        if type == "Stack":
+            dirty_list.extend(["surfaces", "activeSurfaceId", "activeStackActions"])
+        elif type == "Surface":
+            if change_detected:
+                dirty_list.append("activeSurfaceId")
+            dirty_list.append("activeSurfaceActions")
 
-    def stack_move(self, direction):
-        if direction == "up":
-            self._stacks.up(self._stacks.selected_id)
-        else:
-            self._stacks.down(self._stacks.selected_id)
-        self.dirty("stacks", "activeStackActions")
+        if len(dirty_list):
+            self.dirty(*dirty_list)
 
-    # -----------------------------------------------------
-    # Surface
-    # -----------------------------------------------------
-
-    def surface_add(self, **kwargs):
-        stack = self._stacks.stack
-        if stack:
-            id = stack.surfaces.add(**kwargs)
-            self.dirty("activeSurfaceId", "surfaces", "activeSurfaceActions")
-
-    def surface_remove(self, id):
-        stack = self._stacks.stack
-        if stack and stack.surfaces.remove(id):
-            self.dirty("activeSurfaceId", "surfaces", "activeSurfaceActions")
-
-    def surface_select(self, id):
-        stack = self._stacks.stack
-        if stack and stack.surfaces.selected_id != id:
-            stack.surfaces.selected_id = id
-            # self.dirty("points", "orientations") ?
-            self.dirty("activeSurfaceId")
-
-        self.dirty("activeSurfaceActions")
-
-    def surface_move(self, direction):
-        stack = self._stacks.stack
-        if stack:
-            surfaces = stack.surfaces
-            if direction == "up":
-                surfaces.up(surfaces.selected_id)
-            else:
-                surfaces.down(surfaces.selected_id)
-            self.dirty("surfaces", "activeSurfaceActions")
+    def move(self, type, direction):
+        if self._state_handler.move(type, direction):
+            self.dirty(f"{type.lower()}s", f"active{type}Actions")
 
     # -----------------------------------------------------
     # Geometry accessors

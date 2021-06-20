@@ -123,7 +123,7 @@ class VtkViewer:
             self._slice_filters[i].SetCutFunction(self._slice_planes[i])
 
         # Views
-        self.update_grid([0, 100, 0, 100, 0, 100], [10, 10, 10], dirty=False)
+        self.update_grid(dirty=False)
         self._views = {}
         index = 0
         for key in ["vtkViewX", "vtkViewY", "vtkViewZ", "vtkView3D"]:
@@ -206,7 +206,11 @@ class VtkViewer:
         if dirty:
             self.update_views()
 
-    def update_grid(self, extent, resolution, dirty=True):
+    def update_grid(self, dirty=True):
+        grid = self._modeler._state_handler.grid
+        resolution = grid.resolution
+        extent = grid.extent
+
         self._grid.SetDimensions(
             resolution[0] + 1, resolution[1] + 1, resolution[2] + 1
         )
