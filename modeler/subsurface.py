@@ -63,6 +63,19 @@ class Grid:
             "resolution": self.resolution,
         }
 
+    def export_state(self, depth=-1):
+        return {
+            "extent": self.extent,
+            "resolution": self.resolution,
+        }
+
+    def import_state(self, content):
+        if not content:
+            return
+
+        self.extent = content.get("extent", self.extent)
+        self.resolution = content.get("resolution", self.resolution)
+
 
 class AbstractSortedList:
     def __init__(self, klass, parent=None):
@@ -194,7 +207,27 @@ class AbstractSortedList:
         results = []
         for id in self._ids:
             results.append(self[id].export_state(depth - 1))
+            if id == self._active_id:
+                results[-1]["selected"] = 1
+
         return results
+
+    def import_state(self, content):
+        if not content:
+            return
+
+        self._ids = []
+        self._data = {}
+        self._active_id = None
+        keep_active_id = None
+        for item in content:
+            new_obj = self.add(**item)
+            new_obj.import_state(item)
+            if item.get("selected", False):
+                keep_active_id = new_obj.id
+
+        if keep_active_id:
+            self._active_id = keep_active_id
 
 
 class Surface:
@@ -221,6 +254,10 @@ class Surface:
             "id": self.id,
             "name": self.name,
         }
+
+    def import_state(self, content):
+        self.name = content.get("name", self.name)
+        # TODO: handle points/orientations
 
 
 class Surfaces(AbstractSortedList):
@@ -273,6 +310,16 @@ class Stack:
 
         return out
 
+    def import_state(self, content):
+        self.name = content.get("name", self.name)
+        self.feature = content.get("feature", self.feature)
+        if not isinstance(self.feature, Feature):
+            self.feature = Feature(self.feature)
+
+        surfaces = content.get("surfaces", None)
+        if surfaces:
+            self.surfaces.import_state(surfaces)
+
 
 class Stacks(AbstractSortedList):
     def __init__(self):
@@ -322,6 +369,7 @@ class StateManager:
             "activeSurfaceId": self.stacks.stack.surfaces.selected_id
             if self.stacks.stack
             else None,
+            "subsurfaceState": None,
         }
 
     def move(self, type, direction):
@@ -362,8 +410,9 @@ class StateManager:
 
         return change_detected
 
-    def import_state(self, type, state):
-        pass
+    def import_state(self, parsed_json_structure):
+        self.grid.import_state(parsed_json_structure.get("grid", None))
+        self.stacks.import_state(parsed_json_structure.get("stacks", None))
 
     def export_state(self, depth=-1):
         return {
@@ -405,6 +454,11 @@ class SubSurfaceModeler:
                 self._app.set(name, state[name], force=True)
             else:
                 print(f"Unable to dirty missing key {name}")
+
+        # Push all if no args provided
+        if len(args) == 0:
+            for name in state:
+                self._app.set(name, state[name], force=True)
 
     @property
     def state_handler(self):
@@ -505,6 +559,11 @@ class SubSurfaceModeler:
     # Import / Export data
     # -----------------------------------------------------
 
+    def export(self):
+        out = self._state_handler.export_state()
+        self._app.set("subsurfaceState", out, force=True)
+        return out
+
     def import_data(self, data_type, file_data):
         # print(f'{data_type}: {" ".join(file_data.keys())}')
         file_bytes = file_data.get("content")
@@ -517,5 +576,11 @@ class SubSurfaceModeler:
                 self.dirty("grid")  # update client first
                 self.update_grid(**grid_data)
                 self._app.set("subsurfaceImportTS", time.time())
+        elif data_type == "full-model.json":
+            full_data = importer.parse_full_model(file_bytes)
+            self._state_handler.import_state(full_data)
+            # TODO: gempy flush
+            self.dirty()
+            self._app.set("subsurfaceImportTS", time.time())
         else:
             print(f"Do not know how to handle type: {data_type}")
