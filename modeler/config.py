@@ -2,8 +2,8 @@ DEFAULT_NEW_STACK = {"name": "", "feature": "Erosion"}
 DEFAULT_NEW_SURFACE = {"name": ""}
 
 DEFAULT_NEW = {
-    "stack": DEFAULT_NEW_STACK,
-    "surface": DEFAULT_NEW_SURFACE,
+    "Stack": DEFAULT_NEW_STACK,
+    "Surface": DEFAULT_NEW_SURFACE,
 }
 
 shared_state = {
