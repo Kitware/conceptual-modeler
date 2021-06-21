@@ -11,11 +11,13 @@ shared_state = {
     "stackNew": DEFAULT_NEW_STACK,
     "surfaceNew": DEFAULT_NEW_SURFACE,
     # Handling data injestion
+    "fileName": "",
+    "exportShow": False,
     "importShow": False,
     "importFile": None,
     "importType": None,
     "importTypes": [
-        {"text": "Full Conceptual Modeler state", "value": "model.json"},
+        {"text": "Full Conceptual Modeler state", "value": "full-model.json"},
         {"text": "Grid as CSV", "value": "grid.csv"},
     ],
     # GemPy structures
@@ -40,6 +42,7 @@ vuetify = {
             "apply": "mdi-check",
             "cancel": "mdi-cancel",
             "pole": "mdi-sign-pole",
+            "download": "mdi-content-save-outline",
             # view action
             "resetCamera": "mdi-crop-free",
             "scaleZ": "mdi-arrow-expand-vertical",

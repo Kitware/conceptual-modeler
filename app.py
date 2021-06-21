@@ -1,4 +1,5 @@
 import os
+import json
 from pywebvue import App
 from modeler.config import shared_state, vuetify, DEFAULT_NEW
 from modeler.subsurface import SubSurfaceModeler
@@ -55,10 +56,24 @@ def import_file():
     if file_data:
         modeler.import_data(data_type, file_data)
 
+    # reset current import
+    workflow.update_grid()  # <= not great we should embed our wf in state
+    app.set("importType", None)
+    app.set("importFile", None)
+    app.set("importShow", False)
+
 
 @app.change("subsurfaceImportTS")
 def modeler_state_changed():
     viz.update_from_modeler()
+
+
+@app.change("importShow", "exportShow")
+def update_io():
+    if app.dirty("importShow"):
+        app.set("exportShow", False)
+    if app.dirty("exportShow"):
+        app.set("importShow", False)
 
 
 # -----------------------------------------------------------------------------
@@ -99,6 +114,16 @@ def ss_new(type, data):
 @app.trigger("ss_remove")
 def ss_remove(type, id):
     modeler.remove(type, id)
+
+
+@app.trigger("export")
+def export_state():
+    if app.get("exportShow"):
+        app.set("exportShow", False)
+    else:
+        modeler.export()
+        app.set("exportShow", True)
+        app.set("importShow", False)
 
 
 # -----------------------------------------------------------------------------

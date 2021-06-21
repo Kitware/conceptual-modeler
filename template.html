@@ -46,6 +46,16 @@
     >
       <v-icon v-text="`$load`" />
     </v-btn>
+    <v-btn
+      tile
+      small
+      icon
+      :color="exportShow ? 'primary' : ''"
+      @click="trigger('export')"
+    >
+      <v-icon v-text="`$save`" />
+    </v-btn>
+
     <v-progress-linear indeterminate absolute bottom :active="busy" />
   </v-app-bar>
   <v-main>
@@ -72,6 +82,27 @@
           accept=".csv,.json,.npy"
           style="max-width: 300px"
         />
+      </v-card-text>
+    </v-card>
+    <!-- export dialog -->
+    <v-card
+      style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px"
+      v-show="exportShow && subsurfaceState"
+      class="ma-2 pa-2"
+    >
+      <v-card-text>
+        <v-row>
+        <v-text-field
+          dense
+          label="FileName"
+          v-model="fileName"
+          hide-details
+          class="mr-2"
+        />
+        <v-btn icon @click="download(fileName, JSON.stringify(subsurfaceState));exportShow=false">
+          <v-icon v-text="`$download`" />
+        </v-btn>
+      </v-row>
       </v-card-text>
     </v-card>
     <!-- floating controllers -->
