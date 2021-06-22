@@ -1,9 +1,11 @@
+import json
+
+
 def parse_grid_csv(content):
     header, content, *_ = content.decode("utf-8").split("\n")
     keys = header.split(",")
     values = content.split(",")
     data = dict(zip(keys, values))
-    print(data)
     return {
         "extent": [
             float(data.get("xmin", 0)),
@@ -19,3 +21,7 @@ def parse_grid_csv(content):
             int(data.get("nz", 10)),
         ],
     }
+
+
+def parse_full_model(content):
+    return json.loads(content.decode("utf-8"))
