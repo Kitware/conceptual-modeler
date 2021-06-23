@@ -28,26 +28,13 @@ viz = VtkViewer(app, modeler)
 # Callbacks
 # -----------------------------------------------------------------------------
 
-
-@app.change("activeStackId")
-def activate_stack():
-    modeler.select("Stack", app.get("activeStackId"))
-
-
-@app.change("activeSurfaceId")
-def activate_surface():
-    modeler.select("Surface", app.get("activeSurfaceId"))
-
-
 @app.change("vtkCutOrigin")
 def update_slices():
     viz.update_slice_origin(app.get("vtkCutOrigin"))
 
-
 @app.change("importType")
 def reset_file():
     app.set("importFile", None)
-
 
 @app.change("importFile")
 def import_file():
@@ -62,11 +49,9 @@ def import_file():
     app.set("importFile", None)
     app.set("importShow", False)
 
-
 @app.change("subsurfaceImportTS")
 def modeler_state_changed():
     viz.update_from_modeler()
-
 
 @app.change("importShow", "exportShow")
 def update_io():
@@ -75,11 +60,9 @@ def update_io():
     if app.dirty("exportShow"):
         app.set("importShow", False)
 
-
 # -----------------------------------------------------------------------------
 # Method calls
 # -----------------------------------------------------------------------------
-
 
 @app.trigger("grid")
 def update_grid(action, grid):
@@ -87,7 +70,7 @@ def update_grid(action, grid):
     if action == "save":
         extent = [float(x) for x in grid.get("extent")]
         resolution = [int(x) for x in grid.get("resolution")]
-        modeler.update_grid(extent, resolution)
+        # modeler.update_grid(extent, resolution)
         viz.update_grid()
         workflow.update_grid()
 
@@ -98,11 +81,13 @@ def update_grid(action, grid):
         # reset client values to server state
         modeler.dirty("grid")
 
+@app.trigger("ss_select")
+def ss_select(type, id):
+    modeler.select(type, id)
 
 @app.trigger("ss_move")
 def ss_move(type, direction):
     modeler.move(type, direction)
-
 
 @app.trigger("ss_new")
 def ss_new(type, data):
@@ -110,13 +95,11 @@ def ss_new(type, data):
     # Reset placeholder for client
     app.set(f"{type.lower()}New", DEFAULT_NEW[type], force=True)
 
-
 @app.trigger("ss_remove")
 def ss_remove(type, id):
     modeler.remove(type, id)
 
 
-@app.trigger("export")
 def export_state():
     if app.get("exportShow"):
         app.set("exportShow", False)
@@ -124,7 +107,6 @@ def export_state():
         modeler.export()
         app.set("exportShow", True)
         app.set("importShow", False)
-
 
 # -----------------------------------------------------------------------------
 # CLI

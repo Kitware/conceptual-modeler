@@ -100,19 +100,6 @@ class AbstractSortedList:
     def selected_id(self, value):
         self._active_id = value
 
-    # @property
-    # def selected(self):
-    #     if self._active_id in self._data:
-    #         return self._data[self._active_id]
-
-    # @selected.setter
-    # def selected(self, value):
-    #     self._active_id = None
-    #     for id in self._data:
-    #         if self._data[id] == value:
-    #             self._active_id = id
-    #             break
-
     @property
     def names(self):
         results = []
@@ -164,7 +151,6 @@ class AbstractSortedList:
         item = self._klass(name, parent=self._parent, **kwargs)
         self._data[item.id] = item
         self._insert_new_id(item.id)
-        self._active_id = item.id
         return item
 
     def remove(self, id):
@@ -255,6 +241,9 @@ class Surface:
             "name": self.name,
         }
 
+    def out(self, depth=-1):
+        print(self.id,self.name)
+        
     def import_state(self, content):
         self.name = content.get("name", self.name)
         # TODO: handle points/orientations
@@ -310,6 +299,12 @@ class Stack:
 
         return out
 
+    def out(self, depth=-1):
+        print(self.id, self.name, self.feature.value)
+
+        if depth:
+            self.surfaces.out(depth - 1)
+
     def import_state(self, content):
         self.name = content.get("name", self.name)
         self.feature = content.get("feature", self.feature)
@@ -324,7 +319,7 @@ class Stack:
 class Stacks(AbstractSortedList):
     def __init__(self):
         super().__init__(Stack)
-        self.add("basement", feature=Feature.EROSION)
+        self.add("Basement", feature=Feature.EROSION)
 
     @property
     def stack(self):
@@ -332,15 +327,18 @@ class Stacks(AbstractSortedList):
 
     def allowed_actions(self, id):
         allowed = super().allowed_actions(id)
-        # add more constraints
+        # basement constraints
+        if id in self._data:
+            idx = self._ids.index(id)
+            allowed["down"] = idx > 1
+            allowed["up"] &= idx > 0
+            allowed["remove"] = idx > 0
 
         return allowed
-
 
 # -----------------------------------------------------------------------------
 # State Manager
 # -----------------------------------------------------------------------------
-
 
 class StateManager:
     def __init__(self):
@@ -400,15 +398,16 @@ class StateManager:
             return self.stacks.stack.surfaces.remove(id)
 
     def select(self, type, id):
-        change_detected = False
         if type == "Stack":
-            change_detected = self.stacks.selected_id != id
-            self.stacks.selected_id = id
+            if self.stacks.selected_id != id:
+                self.stacks.selected_id = id
+            else:
+                self.stacks.selected_id = None
         elif type == "Surface" and self.stacks.stack:
-            change_detected = self.stacks.stack.surfaces.selected_id != id
-            self.stacks.stack.surfaces.selected_id = id
-
-        return change_detected
+            if self.stacks.stack.surfaces.selected_id != id:
+                self.stacks.stack.surfaces.selected_id = id
+            else:
+                self.stacks.stack.surfaces.selected_id = None
 
     def import_state(self, parsed_json_structure):
         self.grid.import_state(parsed_json_structure.get("grid", None))
@@ -502,14 +501,12 @@ class SubSurfaceModeler:
     def select(self, type, id):
         """type@app: Stack, Surface, Point, Orientation"""
         dirty_list = []
-        change_detected = self._state_handler.select(type, id)
+        self._state_handler.select(type, id)
 
         if type == "Stack":
-            dirty_list.extend(["surfaces", "activeSurfaceId", "activeStackActions"])
+            dirty_list.extend(["activeStackId", "surfaces", "activeSurfaceId", "activeStackActions"])
         elif type == "Surface":
-            if change_detected:
-                dirty_list.append("activeSurfaceId")
-            dirty_list.append("activeSurfaceActions")
+            dirty_list.extend(["activeSurfaceId", "activeSurfaceActions"])
 
         if len(dirty_list):
             self.dirty(*dirty_list)

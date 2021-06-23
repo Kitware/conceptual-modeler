@@ -15,7 +15,7 @@ export C_INCLUDE_PATH=/usr/include/gdal
 ogrinfo --version
 
 # Make sure the version reported by `ogrinfo` match gdal in requirements.txt
-pip install -r ./server/requirements.txt
+pip install -r ./requirements.txt
 
 # Download the wheel that match your system on https://gitlab.kitware.com/vtk/vtk/-/pipeline_schedules
 pip install ~/vtk-9.0.20210616.dev0-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl

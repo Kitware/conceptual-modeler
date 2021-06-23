@@ -280,9 +280,8 @@
             <v-list-item
               v-for="(stack, index) in stacks"
               :key="index"
-              :value="stack.id"
               :class="{ 'v-item--active v-list-item--active': stack.id === activeStackId }"
-              @click="activeStackId = stack.id"
+              @click="trigger('ss_select',['Stack', stack.id])"
               color="primary"
             >
               <v-list-item-icon v-if="stack.feature === 'Fault'">
@@ -383,7 +382,7 @@
       <!-- Surfaces -->
       <v-card
         class="ma-4 rounded elevation-8"
-        v-show="activeStep === 'subsurface'"
+        v-show="activeStackId && activeStep === 'subsurface'"
       >
         <v-card-title
           class="grey lighten-1 py-0 grey--text text--darken-3"
