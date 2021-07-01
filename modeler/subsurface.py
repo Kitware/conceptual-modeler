@@ -7,7 +7,8 @@ from osgeo import gdal
 # import gempy as gp
 import numpy as np
 import gempy as gp
-from . import importer
+import json
+import csv
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -30,6 +31,10 @@ def take_second(item):
     return item[1]
 
 
+def take_order(item):
+    return int(item["order"])
+
+
 def next_order_size(list, **kwargs):
     return len(list)
 
@@ -48,7 +53,7 @@ def create_id_generator(prefix):
 class Feature(Enum):
     EROSION = "Erosion"
     FAULT = "Fault"
-    ONLAP = "OnLap"
+    ONLAP = "Onlap"
 
 
 class Grid:
@@ -100,6 +105,22 @@ class AbstractSortedList:
     def selected_id(self, value):
         self._active_id = value
 
+    def find_index(self, name):
+        for i in range(len(self._ids)):
+            stack = self._data[self._ids[i]]
+            if stack.name == name:
+                return i
+        return
+
+    def find_by_id(self, id):
+        return self._data[id]
+
+    def find_by_name(self, name):
+        for stack in self._data.values():
+            if stack.name == name:
+                return stack
+        return
+
     @property
     def names(self):
         results = []
@@ -125,6 +146,25 @@ class AbstractSortedList:
 
         return results
 
+    def namelist(self):
+        results = []
+        for id in self._ids:
+            item = self._data[id]
+            results.append(item.name)
+
+        results.reverse()
+
+        return results
+
+    def idlist(self):
+        results = []
+        for id in self._ids:
+            results.append(id)
+
+        results.reverse()
+
+        return results
+
     def allowed_actions(self, id):
         actions = {
             "add": 1,
@@ -141,8 +181,17 @@ class AbstractSortedList:
 
         return actions
 
-    def _insert_new_id(self, id):
+    def _append_new_id(self, id):
         self._ids.append(id)
+
+    def _insert_new_id(self, name, id):
+        print("before")
+        index = self.find_index(name)
+        print("after", index)
+        if index:
+            self._ids.insert(index, id)
+        else:
+            self._ids.append(id)
 
     def add(self, name, **kwargs):
         if not self.allowed_actions(self._active_id).get("add", False):
@@ -150,7 +199,19 @@ class AbstractSortedList:
 
         item = self._klass(name, parent=self._parent, **kwargs)
         self._data[item.id] = item
-        self._insert_new_id(item.id)
+        self._append_new_id(item.id)
+        return item
+
+    def insert(self, locationname, name, **kwargs):
+        if not self.allowed_actions(self._active_id).get("add", False):
+            return False
+
+        item = self._klass(name, parent=self._parent, **kwargs)
+        self._data[item.id] = item
+        print(locationname)
+        item.out()
+        self._insert_new_id(locationname, item.id)
+        print("inserted")
         return item
 
     def remove(self, id):
@@ -241,9 +302,9 @@ class Surface:
             "name": self.name,
         }
 
-    def out(self, depth=-1):
-        print(self.id,self.name)
-        
+    def out(self):
+        print(self.id, self.name)
+
     def import_state(self, content):
         self.name = content.get("name", self.name)
         # TODO: handle points/orientations
@@ -263,6 +324,11 @@ class Surfaces(AbstractSortedList):
         # A fault can only have 1 surface
         if self._parent.feature == Feature.FAULT:
             allowed["add"] = len(self) == 0
+        if self._parent.name == "Basement":
+            allowed["add"] = len(self) == 0
+            allowed["down"] = 0
+            allowed["up"] = 0
+            allowed["remove"] = 0
 
         return allowed
 
@@ -299,11 +365,8 @@ class Stack:
 
         return out
 
-    def out(self, depth=-1):
+    def out(self):
         print(self.id, self.name, self.feature.value)
-
-        if depth:
-            self.surfaces.out(depth - 1)
 
     def import_state(self, content):
         self.name = content.get("name", self.name)
@@ -319,7 +382,6 @@ class Stack:
 class Stacks(AbstractSortedList):
     def __init__(self):
         super().__init__(Stack)
-        self.add("Basement", feature=Feature.EROSION)
 
     @property
     def stack(self):
@@ -327,18 +389,90 @@ class Stacks(AbstractSortedList):
 
     def allowed_actions(self, id):
         allowed = super().allowed_actions(id)
-        # basement constraints
+        # Basement constraints
         if id in self._data:
             idx = self._ids.index(id)
             allowed["down"] = idx > 1
             allowed["up"] &= idx > 0
             allowed["remove"] = idx > 0
+            # Fault constraints
+            stack = self._data[self._ids[idx]]
+            if idx > 0:
+                stack_below = self._data[self._ids[idx - 1]]
+                if (
+                    stack.feature == Feature.FAULT
+                    and stack_below.feature != Feature.FAULT
+                ):
+                    allowed["down"] = 0
+            if idx < (len(self._ids) - 1):
+                stack_above = self._data[self._ids[idx + 1]]
+                if (
+                    stack.feature != Feature.FAULT
+                    and stack_above.feature == Feature.FAULT
+                ):
+                    allowed["up"] = 0
 
         return allowed
+
+    def map_stack_to_surfaces(self):
+        mapstacks = {}
+        for id in self._ids:
+            stack = self._data[id]
+            surfacesNames = stack.surfaces.idlist()
+            if len(surfacesNames) > 0:
+                surfacesNames.reverse()
+                mapstacks[stack.id] = surfacesNames
+        return mapstacks
+
+    def reorder_features(self):
+        reorderedfeatures = []
+        for id in self._ids:
+            stack = self._data[id]
+            surfacesNames = stack.surfaces.idlist()
+            if len(surfacesNames) > 0:
+                reorderedfeatures.append(stack.id)
+        reorderedfeatures.reverse()
+        return reorderedfeatures
+
+    def bottom_relations(self):
+        bottomrelations = []
+        reorderedfeatures = self.reorder_features()
+        if len(reorderedfeatures) > 1:
+            for i in range(0, len(reorderedfeatures) - 1, 1):
+                stack = self.find_by_id(reorderedfeatures[i])
+                nextstack = self.find_by_id(reorderedfeatures[i + 1])
+                if stack.feature == Feature.FAULT:
+                    bottomrelations.append(
+                        {"name": stack.id, "feature": stack.feature.value}
+                    )
+                else:
+                    bottomrelations.append(
+                        {"name": stack.id, "feature": nextstack.feature.value}
+                    )
+        return bottomrelations
+
+    def is_a_fault(self):
+        isafault = []
+        reorderedfeatures = self.reorder_features()
+        if len(reorderedfeatures) > 1:
+            for i in range(0, len(reorderedfeatures) - 1, 1):
+                stack = self.find_by_id(reorderedfeatures[i])
+                if stack.feature == Feature.FAULT:
+                    isafault.append(stack.id)
+        return isafault
+
+    def find_oldest_fault_name(self):
+        for id in self._ids:
+            stack = self._data[id]
+            if stack.feature == Feature.FAULT:
+                return stack.name
+        return
+
 
 # -----------------------------------------------------------------------------
 # State Manager
 # -----------------------------------------------------------------------------
+
 
 class StateManager:
     def __init__(self):
@@ -370,6 +504,24 @@ class StateManager:
             "subsurfaceState": None,
         }
 
+    def find_stack_by_name(self, name):
+        return self.stacks.find_by_name(name)
+
+    def find_stack_by_id(self, id):
+        return self.stacks.find_by_id(id)
+
+    def map_stack_to_surfaces(self):
+        return self.stacks.map_stack_to_surfaces()
+
+    def reorder_features(self):
+        return self.stacks.reorder_features()
+
+    def bottom_relations(self):
+        return self.stacks.bottom_relations()
+
+    def is_a_fault(self):
+        return self.stacks.is_a_fault()
+
     def move(self, type, direction):
         active_stack = self.stacks.stack
         if active_stack:
@@ -387,9 +539,21 @@ class StateManager:
 
     def add(self, type, data):
         if type == "Stack":
-            return self.stacks.add(**data)
-        elif type == "Surface" and self.stacks.stack:
-            return self.stacks.stack.surfaces.add(**data)
+            if Feature(data["feature"]) == Feature.FAULT:
+                return self.stacks.add(**data)
+            else:
+                locationname = self.stacks.find_oldest_fault_name()
+                if locationname:
+                    return self.stacks.insert(locationname, **data)
+                else:
+                    return self.stacks.add(**data)
+        elif type == "Surface":
+            if "stackname" in data:
+                return self.stacks.find_by_name(data["stackname"]).surfaces.add(
+                    data["name"]
+                )
+            else:
+                return self.stacks[data["stackid"]].surfaces.add(data["name"])
 
     def remove(self, type, id):
         if type == "Stack":
@@ -435,11 +599,25 @@ class SubSurfaceModeler:
 
         # gempy model
         self._has_topology = False
-        self._model = gp.create_model("conceptual_modeler")
-        # self._model.add_surfaces('basement')
-        # gp.map_stack_to_surfaces(self.geo_model, mapstacks, remove_unused_series=True)
-        # self.geo_model.reorder_features(orderStacks)
-        # self.geo_model.set_bottom_relation(self.stacks[i]['name'], self.stacks[i-1]['feature'])
+        # Create GemPy Model
+        self._geo_model = gp.create_model("conceptual_modeler")
+        # Initialize GemPy Interpolator
+        gp.set_interpolator(
+            self._geo_model,
+            output=["geology"],
+            theano_optimizer="fast_compile",
+        )
+        # Add Basement Stack
+        type = "Stack"
+        data = {"name": "Basement", "feature": Feature.EROSION}
+        self.add(type, data)
+        # Add basement Surface to Basement Stack
+        type = "Surface"
+        data = {"name": "basement", "stackname": "Basement"}
+        self.add(type, data)
+        # Set the basement Surface as the basement
+        surfaces = gp.Surfaces(gp.Series(self._geo_model.faults))
+        surfaces.set_basement()
 
         # Expend shared state in app
         app.state.update(self._state_handler.client_state)
@@ -472,16 +650,10 @@ class SubSurfaceModeler:
         self._state_handler.grid.resolution = resolution
         # update gempy
         gp.init_data(
-            self._model,
+            self._geo_model,
             extent=extent,
             resolution=resolution,
         )
-        gp.set_interpolator(
-            self._model,
-            output=["geology"],
-            theano_optimizer="fast_compile",
-        )
-
         self.dirty("grid")
 
     # -----------------------------------------------------
@@ -491,6 +663,36 @@ class SubSurfaceModeler:
     def add(self, type, data):
         """type@html: Stack, Surface, Point, Orientation"""
         if self._state_handler.add(type, data):
+            if type == "Stack":
+                stack = self._state_handler.find_stack_by_name(data["name"])
+            elif type == "Surface":
+                if "stackname" in data:
+                    stack = self._state_handler.find_stack_by_name(data["stackname"])
+                    surface = stack.surfaces.find_by_name(data["name"])
+                    self._geo_model.add_surfaces(surface.id)
+                else:
+                    stack = self._state_handler.find_stack_by_id(data["stackid"])
+                    surface = stack.surfaces.find_by_name(data["name"])
+                    self._geo_model.add_surfaces(surface.id)
+                mapstacks = self._state_handler.map_stack_to_surfaces()
+                gp.map_stack_to_surfaces(
+                    self._geo_model, mapstacks, remove_unused_series=True
+                )
+                reorderedfeatures = self._state_handler.reorder_features()
+                if len(reorderedfeatures) > 1:
+                    self._geo_model.reorder_features(reorderedfeatures)
+                bottomrelations = self._state_handler.bottom_relations()
+                for layer in bottomrelations:
+                    self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
+                isafault = self._state_handler.is_a_fault()
+                if len(isafault) > 0:
+                    self._geo_model.set_is_fault(isafault)
+            # print("** GemPy Fault Relations **")
+            print(self._geo_model._faults.faults_relations_df)
+            # print("** GemPy Faults **")
+            print(self._geo_model._faults)
+            # print("** GemPy Surfaces **")
+            print(self._geo_model._surfaces)
             self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
 
     def remove(self, type, id):
@@ -504,7 +706,9 @@ class SubSurfaceModeler:
         self._state_handler.select(type, id)
 
         if type == "Stack":
-            dirty_list.extend(["activeStackId", "surfaces", "activeSurfaceId", "activeStackActions"])
+            dirty_list.extend(
+                ["activeStackId", "surfaces", "activeSurfaceId", "activeStackActions"]
+            )
         elif type == "Surface":
             dirty_list.extend(["activeSurfaceId", "activeSurfaceActions"])
 
@@ -519,18 +723,18 @@ class SubSurfaceModeler:
     # Geometry accessors
     # -----------------------------------------------------
 
-    def compute_model(self):
-        gp.compute_model(self._model)
+    def compute_geo_model(self):
+        gp.compute_model(self._geo_model)
 
     @property
     def litho(self):
-        resolution = self._model._grid.regular_grid.resolution
+        resolution = self._geo_model._grid.regular_grid.resolution
         if len(resolution) != 3:
             return None
 
         nx, ny, nz = resolution
         size = nx * ny * nz
-        array = self._model.solutions.lith_block
+        array = self._geo_model.solutions.lith_block
         print("lito size", (nx, ny, nz), size, array.size)
         if size != array.size:
             return None
@@ -539,13 +743,13 @@ class SubSurfaceModeler:
 
     @property
     def blanking(self):
-        resolution = self._model._grid.regular_grid.resolution
+        resolution = self._geo_model._grid.regular_grid.resolution
         if len(resolution) != 3:
             return None
 
         nx, ny, nz = resolution
         size = nx * ny * nz
-        array = self._model._grid.regular_grid.mask_topo
+        array = self._geo_model._grid.regular_grid.mask_topo
         print("blanking size", (nx, ny, nz), size, array.size)
         if size != array.size:
             return None
@@ -568,16 +772,81 @@ class SubSurfaceModeler:
         # file_size = file_data.get("size")
 
         if data_type == "grid.csv":
-            grid_data = importer.parse_grid_csv(file_bytes)
+            grid_data = self.parse_grid_csv(file_bytes)
             if grid_data:
-                self.dirty("grid")  # update client first
+                self.dirty("grid")
                 self.update_grid(**grid_data)
                 self._app.set("subsurfaceImportTS", time.time())
+        elif data_type == "stacks.csv":
+            stack_data = self.parse_stacks_csv(file_bytes)
+            if stack_data:
+                self.dirty("stacks")
+        elif data_type == "surfaces.csv":
+            stack_data = self.parse_surfaces_csv(file_bytes)
+            if stack_data:
+                self.dirty("surfaces")
         elif data_type == "full-model.json":
-            full_data = importer.parse_full_model(file_bytes)
+            full_data = json.loads(file_bytes.decode("utf-8"))
             self._state_handler.import_state(full_data)
             # TODO: gempy flush
             self.dirty()
             self._app.set("subsurfaceImportTS", time.time())
         else:
             print(f"Do not know how to handle type: {data_type}")
+
+    def parse_grid_csv(self, content):
+        reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=",")
+        for row in reader:
+            if (
+                "xmin" in row
+                and "xmax" in row
+                and "ymin" in row
+                and "ymax" in row
+                and "zmin" in row
+                and "zmax" in row
+                and "nx" in row
+                and "ny" in row
+                and "nz" in row
+            ):
+                return {
+                    "extent": [
+                        float(row["xmin"]),
+                        float(row["xmax"]),
+                        float(row["ymin"]),
+                        float(row["ymax"]),
+                        float(row["zmin"]),
+                        float(row["zmax"]),
+                    ],
+                    "resolution": [
+                        int(row["nx"]),
+                        int(row["ny"]),
+                        int(row["nz"]),
+                    ],
+                }
+            else:
+                print("Bad grid.csv file")
+                return
+
+    def parse_stacks_csv(self, content):
+        reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=",")
+        stacks = sorted(reader, key=take_order)
+        for row in stacks:
+            if "stack" in row and "feature" in row and "order" in row:
+                self.add("Stack", {"name": row["stack"], "feature": row["feature"]})
+            else:
+                print("Bad stacks.csv file")
+                return
+        return stacks
+
+    def parse_surfaces_csv(self, content):
+        reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=",")
+        stacks = sorted(reader, key=take_order)
+        for row in stacks:
+            if "formation" in row and "stack" in row and "order" in row:
+                self.add(
+                    "Surface", {"name": row["formation"], "stackname": row["stack"]}
+                )
+            else:
+                print("Bad surfaces.csv file")
+                return
+        return stacks

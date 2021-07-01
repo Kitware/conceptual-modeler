@@ -1,5 +1,5 @@
 DEFAULT_NEW_STACK = {"name": "", "feature": "Erosion"}
-DEFAULT_NEW_SURFACE = {"name": ""}
+DEFAULT_NEW_SURFACE = {"name": "", "stackid": ""}
 
 DEFAULT_NEW = {
     "Stack": DEFAULT_NEW_STACK,
@@ -19,6 +19,8 @@ shared_state = {
     "importTypes": [
         {"text": "Full Conceptual Modeler state", "value": "full-model.json"},
         {"text": "Grid as CSV", "value": "grid.csv"},
+        {"text": "Stacks as CSV", "value": "stacks.csv"},
+        {"text": "Surfaces as CSV", "value": "surfaces.csv"},
     ],
     # GemPy structures
     # Visualization

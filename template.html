@@ -127,14 +127,9 @@
           <v-icon class="mr-3" color="grey darken-3" v-text="`$grid`" />
           Grid
           <v-spacer />
-          <v-btn dense icon tile small>
+          <v-btn @click="importType='grid.csv';document.getElementById('csvGridFile').click();" dense icon tile small>
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input
-              type="file"
-              ref="fileSelector"
-              v-show="false"
-              name="csvToUpload"
-            />
+            <input id="csvGridFile" type="file" style="display:none;" @change="importFile=$event.target.files[0]"/>
           </v-btn>
         </v-card-title>
         <v-card-text class="pb-0 mb-n2">
@@ -265,14 +260,9 @@
           <v-icon class="mr-3" color="grey darken-3" v-text="`$stacks`" />
           Stacks
           <v-spacer />
-          <v-btn dense icon tile small>
+          <v-btn @click="importType='stacks.csv';document.getElementById('csvStacksFile').click();" dense icon tile small>
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input
-              type="file"
-              ref="fileSelector"
-              v-show="false"
-              name="csvToUpload"
-            />
+            <input id="csvStacksFile" type="file" style="display:none;" @change="importFile=$event.target.files[0]"/>
           </v-btn>
         </v-card-title>
         <v-card-text class="pb-0 mb-n2 px-0">
@@ -382,7 +372,7 @@
       <!-- Surfaces -->
       <v-card
         class="ma-4 rounded elevation-8"
-        v-show="activeStackId && activeStep === 'subsurface'"
+        v-show="activeStep === 'subsurface'"
       >
         <v-card-title
           class="grey lighten-1 py-0 grey--text text--darken-3"
@@ -391,24 +381,19 @@
           <v-icon class="mr-3" color="grey darken-3" v-text="`$surfaces`" />
           Surfaces
           <v-spacer />
-          <v-btn dense icon tile small>
+          <v-btn @click="importType='surfaces.csv';document.getElementById('csvSurfacesFile').click();" dense icon tile small>
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input
-              type="file"
-              ref="fileSelector"
-              v-show="false"
-              name="csvToUpload"
-            />
+            <input id="csvSurfacesFile" type="file" style="display:none;" @change="importFile=$event.target.files[0]"/>
           </v-btn>
         </v-card-title>
-        <v-card-text class="pb-0 mb-n2 px-0">
+        <v-card-text v-show="activeStackId" class="pb-0 mb-n2 px-0">
           <v-list dense>
             <v-list-item
               v-for="(surface, index) in surfaces"
-              :key="surface.id"
+              :key="index"
               :value="surface.id"
               :class="{ 'v-item--active v-list-item--active': surface.id === activeSurfaceId }"
-              @click="activeSurfaceId = surface.id"
+              @click="trigger('ss_select',['Surface', surface.id])"
               color="primary"
             >
               <v-list-item-icon v-if="surface.feature === 'Fault'">
@@ -434,7 +419,7 @@
           </v-list>
           <v-divider class="mb-2" />
         </v-card-text>
-        <v-card-actions class="pa-0 pb-3">
+        <v-card-actions v-show="activeStackId" class="pa-0 pb-3">
           <v-row dense v-show="!activeSurfaceId" class="mt-3 mx-1">
             <v-text-field
               class="mx-1"
@@ -449,7 +434,7 @@
               icon
               small
               color="success"
-              @click="trigger('ss_new', ['Surface', surfaceNew])"
+              @click="surfaceNew.stackid = activeStackId; trigger('ss_new', ['Surface', surfaceNew]);"
             >
               <v-icon v-text="`$add`" />
             </v-btn>
