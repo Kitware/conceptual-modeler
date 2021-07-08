@@ -485,6 +485,113 @@
           </v-row>
         </v-card-actions>
       </v-card>
+      <!-- Points -->
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$points`" />
+          Points
+          <v-spacer />
+          <v-btn @click="importType='points.csv';document.getElementById('csvPointsFile').click();" dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$load`" />
+            <input id="csvPointsFile" type="file" style="display:none;" @change="importFile=$event.target.files[0]"/>
+          </v-btn>
+        </v-card-title>
+        <v-card-text v-show="activeStackId && activeSurfaceId" class="pb-0 mb-n2 px-0">
+          <v-list dense>
+            <v-subheader class="d-flex justify-center">X, Y, Z</v-subheader>
+            <v-list-item
+              v-for="(point, index) in points"
+              :key="index"
+              :value="point.id"
+              :class="{ 'v-item--active v-list-item--active': point.id === activePointId }"
+              @click="trigger('ss_select',['Point', point.id])"
+              color="primary"
+            >
+              <v-list-item-icon class="mr-0 ml-0">
+                <v-icon class="float-left" v-text="`$point`" x-small />
+              </v-list-item-icon>
+              <v-list-item-content class="d-flex justify-center text-caption" x-small>
+                {{point.x}}, {{point.y}}, {{point.z}}
+              </v-list-item-content>
+              <v-list-item-icon class="mr-0 ml-0">
+                <v-icon
+                  class="float-right"
+                  x-small
+                  v-text="point.surfacename"
+                />
+              </v-list-item-icon>
+            </v-list-item>
+          </v-list>
+          <v-divider class="mb-2" />
+        </v-card-text>
+        <v-card-actions v-show="activeStackId && activeSurfaceId" class="pa-0 pb-3">
+          <v-row dense v-show="!activePointId" class="mt-3 mx-1">
+            <v-col cols="12" sm="3">
+              <v-text-field
+                dense
+                label="X"
+                v-model="pointNew.x"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <v-text-field
+                dense
+                label="Y"
+                v-model="pointNew.y"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+              <v-text-field
+                dense
+                label="Z"
+                v-model="pointNew.z"
+              />
+            </v-col>
+            <v-col cols="12" sm="3">
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="pointNew.surfaceid = activeSurfaceId; trigger('ss_new', ['Point', pointNew]);"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-col>
+          </v-row>
+          <v-row dense v-show="activePointId" class="mt-3 mx-1">
+            <v-spacer />
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['Point', activePointId])"
+              :disabled="!activePointActions.remove"
+            >
+              <v-icon v-text="`$delete`" />
+            </v-btn>
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activePointId = null"
+              :disabled="!activePointActions.add"
+            >
+              <v-icon v-text="`$add`" />
+            </v-btn>
+          </v-row>
+        </v-card-actions>
+      </v-card>
     </div>
     <!-- quad view / single -->
     <v-container fluid fill-height class="pa-0" style="position: relative">

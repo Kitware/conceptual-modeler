@@ -1,15 +1,18 @@
 DEFAULT_NEW_STACK = {"name": "", "feature": "Erosion"}
 DEFAULT_NEW_SURFACE = {"name": "", "stackid": ""}
+DEFAULT_NEW_POINT = {"x": "", "y": "", "z": "", "surfaceid": ""}
 
 DEFAULT_NEW = {
     "Stack": DEFAULT_NEW_STACK,
     "Surface": DEFAULT_NEW_SURFACE,
+    "Point": DEFAULT_NEW_POINT,
 }
 
 shared_state = {
     # SubSurface client models
     "stackNew": DEFAULT_NEW_STACK,
     "surfaceNew": DEFAULT_NEW_SURFACE,
+    "pointNew": DEFAULT_NEW_POINT,
     # Handling data injestion
     "fileName": "",
     "exportShow": False,

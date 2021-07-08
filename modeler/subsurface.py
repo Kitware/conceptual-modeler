@@ -15,28 +15,8 @@ import csv
 # -----------------------------------------------------------------------------
 
 
-def to_id_order(item):
-    return (item.id, item.order)
-
-
-def to_name_order(item):
-    return (item.name, item.order)
-
-
-def take_first(item):
-    return item[0]
-
-
-def take_second(item):
-    return item[1]
-
-
 def take_order(item):
     return int(item["order"])
-
-
-def next_order_size(list, **kwargs):
-    return len(list)
 
 
 def create_id_generator(prefix):
@@ -105,33 +85,18 @@ class AbstractSortedList:
     def selected_id(self, value):
         self._active_id = value
 
-    def find_index(self, name):
-        for i in range(len(self._ids)):
-            stack = self._data[self._ids[i]]
-            if stack.name == name:
-                return i
-        return
-
     def find_by_id(self, id):
-        return self._data[id]
-
-    def find_by_name(self, name):
-        for stack in self._data.values():
-            if stack.name == name:
-                return stack
+        for item in self._data.values():
+            if item.id == id:
+                return item
         return
-
-    @property
-    def names(self):
-        results = []
-        for id in self._ids:
-            item = self._data[id]
-            results.append(item.name)
-        return results
 
     @property
     def ids(self):
-        return self._ids
+        results = []
+        for id in self._ids:
+            results.append(id)
+        return results
 
     @property
     def html(self):
@@ -141,25 +106,6 @@ class AbstractSortedList:
             out = {"id": id}
             out.update(item.html)
             results.append(out)
-
-        results.reverse()
-
-        return results
-
-    def namelist(self):
-        results = []
-        for id in self._ids:
-            item = self._data[id]
-            results.append(item.name)
-
-        results.reverse()
-
-        return results
-
-    def idlist(self):
-        results = []
-        for id in self._ids:
-            results.append(id)
 
         results.reverse()
 
@@ -184,34 +130,13 @@ class AbstractSortedList:
     def _append_new_id(self, id):
         self._ids.append(id)
 
-    def _insert_new_id(self, name, id):
-        print("before")
-        index = self.find_index(name)
-        print("after", index)
-        if index:
-            self._ids.insert(index, id)
-        else:
-            self._ids.append(id)
-
-    def add(self, name, **kwargs):
+    def add(self, **kwargs):
         if not self.allowed_actions(self._active_id).get("add", False):
             return False
 
-        item = self._klass(name, parent=self._parent, **kwargs)
+        item = self._klass(parent=self._parent, **kwargs)
         self._data[item.id] = item
         self._append_new_id(item.id)
-        return item
-
-    def insert(self, locationname, name, **kwargs):
-        if not self.allowed_actions(self._active_id).get("add", False):
-            return False
-
-        item = self._klass(name, parent=self._parent, **kwargs)
-        self._data[item.id] = item
-        print(locationname)
-        item.out()
-        self._insert_new_id(locationname, item.id)
-        print("inserted")
         return item
 
     def remove(self, id):
@@ -277,14 +202,68 @@ class AbstractSortedList:
             self._active_id = keep_active_id
 
 
+class Point:
+    id_generator = create_id_generator("Point")
+
+    def __init__(self, x, y, z, parent=None, **kwargs):
+        self.id = next(Point.id_generator)
+        self.x = x
+        self.y = y
+        self.z = z
+        self.surface = parent
+
+    @property
+    def html(self):
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+            "surfacename": self.surface.name,
+        }
+
+    def export_state(self, depth=-1):
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+        }
+
+    def out(self):
+        print(self.id, self.x, self.y, self.z)
+
+    def import_state(self, content):
+        self.x = content.get("x", self.x)
+        self.y = content.get("y", self.y)
+        self.z = content.get("z", self.z)
+
+
+class Points(AbstractSortedList):
+    def __init__(self, parent):
+        super().__init__(Point, parent)
+
+    @property
+    def point(self):
+        return self[self.selected_id]
+
+    def allowed_actions(self, id):
+        allowed = super().allowed_actions(id)
+
+        # Don't allow moving points
+        allowed["down"] = 0
+        allowed["up"] = 0
+
+        return allowed
+
+
 class Surface:
     id_generator = create_id_generator("Surface")
 
     def __init__(self, name, parent=None, **kwargs):
         self.id = next(Surface.id_generator)
         self.name = name
-        self.points = []
-        self.orientations = []
+        self.points = Points(self)
         self.stack = parent
 
     @property
@@ -297,17 +276,26 @@ class Surface:
         }
 
     def export_state(self, depth=-1):
-        return {
+        out = {
             "id": self.id,
             "name": self.name,
         }
+
+        if depth:
+            out["points"] = self.points.export_state(depth - 1)
+        # TODO: handle orientations
+        return out
 
     def out(self):
         print(self.id, self.name)
 
     def import_state(self, content):
         self.name = content.get("name", self.name)
-        # TODO: handle points/orientations
+
+        points = content.get("points", None)
+        if points:
+            self.points.import_state(points)
+        # TODO: handle orientations
 
 
 class Surfaces(AbstractSortedList):
@@ -331,6 +319,26 @@ class Surfaces(AbstractSortedList):
             allowed["remove"] = 0
 
         return allowed
+
+    def reverse_ids(self):
+        results = self.ids
+        results.reverse()
+        return results
+
+    def add_surface(self, name, **kwargs):
+        if not self.allowed_actions(self._active_id).get("add", False):
+            return False
+
+        item = self._klass(name, parent=self._parent, **kwargs)
+        self._data[item.id] = item
+        self._append_new_id(item.id)
+        return item
+
+    def find_by_name(self, name):
+        for surface in self._data.values():
+            if surface.name == name:
+                return surface
+        return
 
 
 class Stack:
@@ -389,9 +397,10 @@ class Stacks(AbstractSortedList):
 
     def allowed_actions(self, id):
         allowed = super().allowed_actions(id)
-        # Basement constraints
+
         if id in self._data:
             idx = self._ids.index(id)
+            # Basement constraints
             allowed["down"] = idx > 1
             allowed["up"] &= idx > 0
             allowed["remove"] = idx > 0
@@ -414,11 +423,63 @@ class Stacks(AbstractSortedList):
 
         return allowed
 
+    def add_stack(self, name, **kwargs):
+        if not self.allowed_actions(self._active_id).get("add", False):
+            return False
+
+        item = self._klass(name, parent=self._parent, **kwargs)
+        self._data[item.id] = item
+        self._append_new_id(item.id)
+        return item
+
+    def find_by_name(self, name):
+        for stack in self._data.values():
+            if stack.name == name:
+                return stack
+        return
+
+    def find_index(self, name):
+        for i in range(len(self._ids)):
+            stack = self._data[self._ids[i]]
+            if stack.name == name:
+                return i
+        return
+
+    def find_surface_by_name(self, name):
+        for stack in self._data.values():
+            surface = stack.surfaces.find_by_name(name)
+            if surface:
+                return surface
+        return
+
+    def find_surface_by_id(self, id):
+        for stack in self._data.values():
+            surface = stack.surfaces.find_by_id(id)
+            if surface:
+                return surface
+        return
+
+    def _insert_new_id(self, name, id):
+        index = self.find_index(name)
+        if index:
+            self._ids.insert(index, id)
+        else:
+            self._ids.append(id)
+
+    def insert(self, location_name, name, **kwargs):
+        if not self.allowed_actions(self._active_id).get("add", False):
+            return False
+
+        item = self._klass(name, parent=self._parent, **kwargs)
+        self._data[item.id] = item
+        self._insert_new_id(location_name, item.id)
+        return item
+
     def map_stack_to_surfaces(self):
         mapstacks = {}
         for id in self._ids:
             stack = self._data[id]
-            surfacesNames = stack.surfaces.idlist()
+            surfacesNames = stack.surfaces.reverse_ids()
             if len(surfacesNames) > 0:
                 surfacesNames.reverse()
                 mapstacks[stack.id] = surfacesNames
@@ -428,7 +489,7 @@ class Stacks(AbstractSortedList):
         reorderedfeatures = []
         for id in self._ids:
             stack = self._data[id]
-            surfacesNames = stack.surfaces.idlist()
+            surfacesNames = stack.surfaces.reverse_ids()
             if len(surfacesNames) > 0:
                 reorderedfeatures.append(stack.id)
         reorderedfeatures.reverse()
@@ -485,22 +546,49 @@ class StateManager:
 
     @property
     def client_state(self):
+        grid = self.grid.html
+        stacks = self.stacks.html
+        active_stack = self.stacks.stack
+        active_stack_id = None
+        stack_actions = {}
+        surfaces = None
+        active_surface = None
+        active_surface_id = None
+        surface_actions = {}
+        points = None
+        active_point_id = None
+        point_actions = {}
+
+        if active_stack:
+            active_stack_id = active_stack.id
+            stack_actions = self.stacks.allowed_actions(active_stack_id)
+            surfaces = active_stack.surfaces
+
+        if surfaces:
+            active_surface_id = surfaces.selected_id
+            surface_actions = surfaces.allowed_actions(active_surface_id)
+            active_surface = surfaces.surface
+            surfaces = surfaces.html
+
+        if active_surface:
+            points = active_surface.points
+            active_point_id = points.selected_id
+            point_actions = points.allowed_actions(active_point_id)
+            points = points.html
+
         return {
-            "subsurfaceImportTS": 0,
             "features": [a.value for a in Feature],
-            "grid": self.grid.html,
-            "activeStackId": self.stacks.selected_id,
-            "activeStackActions": self.stacks.allowed_actions(self.stacks.selected_id),
-            "stacks": self.stacks.html,
-            "surfaces": self.stacks.stack.surfaces.html if self.stacks.stack else [],
-            "activeSurfaceActions": self.stacks.stack.surfaces.allowed_actions(
-                self.stacks.stack.surfaces.selected_id
-            )
-            if self.stacks.stack
-            else {},
-            "activeSurfaceId": self.stacks.stack.surfaces.selected_id
-            if self.stacks.stack
-            else None,
+            "grid": grid,
+            "stacks": stacks,
+            "activeStackId": active_stack_id,
+            "activeStackActions": stack_actions,
+            "surfaces": surfaces,
+            "activeSurfaceId": active_surface_id,
+            "activeSurfaceActions": surface_actions,
+            "points": points,
+            "activePointActions": point_actions,
+            "activePointId": active_point_id,
+            "subsurfaceImportTS": 0,
             "subsurfaceState": None,
         }
 
@@ -509,6 +597,12 @@ class StateManager:
 
     def find_stack_by_id(self, id):
         return self.stacks.find_by_id(id)
+
+    def find_surface_by_name(self, name):
+        return self.stacks.find_surface_by_name(name)
+
+    def find_surface_by_id(self, id):
+        return self.stacks.find_surface_by_id(id)
 
     def map_stack_to_surfaces(self):
         return self.stacks.map_stack_to_surfaces()
@@ -540,20 +634,29 @@ class StateManager:
     def add(self, type, data):
         if type == "Stack":
             if Feature(data["feature"]) == Feature.FAULT:
-                return self.stacks.add(**data)
+                return self.stacks.add_stack(**data)
             else:
                 locationname = self.stacks.find_oldest_fault_name()
                 if locationname:
                     return self.stacks.insert(locationname, **data)
                 else:
-                    return self.stacks.add(**data)
+                    return self.stacks.add_stack(**data)
         elif type == "Surface":
             if "stackname" in data:
-                return self.stacks.find_by_name(data["stackname"]).surfaces.add(
+                return self.stacks.find_by_name(data["stackname"]).surfaces.add_surface(
                     data["name"]
                 )
             else:
-                return self.stacks[data["stackid"]].surfaces.add(data["name"])
+                return self.stacks[data["stackid"]].surfaces.add_surface(data["name"])
+        elif type == "Point":
+            if "surfacename" in data:
+                surface = self.stacks.find_surface_by_name(data["surfacename"])
+                if surface:
+                    return surface.points.add(**data)
+            else:
+                surface = self.stacks.find_surface_by_id(data["surfaceid"])
+                if surface:
+                    return surface.points.add(**data)
 
     def remove(self, type, id):
         if type == "Stack":
@@ -572,6 +675,13 @@ class StateManager:
                 self.stacks.stack.surfaces.selected_id = id
             else:
                 self.stacks.stack.surfaces.selected_id = None
+        elif (
+            type == "Point" and self.stacks.stack and self.stacks.stack.surfaces.surface
+        ):
+            if self.stacks.stack.surfaces.surface.points.selected_id != id:
+                self.stacks.stack.surfaces.surface.points.selected_id = id
+            else:
+                self.stacks.stack.surfaces.surface.points.selected_id = None
 
     def import_state(self, parsed_json_structure):
         self.grid.import_state(parsed_json_structure.get("grid", None))
@@ -637,6 +747,26 @@ class SubSurfaceModeler:
             for name in state:
                 self._app.set(name, state[name], force=True)
 
+    def dirty_state(self, type):
+        """type@app: Stack, Surface, Point, Orientation"""
+        dirty_list = []
+        stack_state_list = ["stacks", "activeStackId", "activeStackActions"]
+        surface_state_list = ["surfaces", "activeSurfaceId", "activeSurfaceActions"]
+        point_state_list = ["points", "activePointId", "activePointActions"]
+
+        if type == "Stack":
+            dirty_list.extend(stack_state_list)
+            dirty_list.extend(surface_state_list)
+            dirty_list.extend(point_state_list)
+        elif type == "Surface":
+            dirty_list.extend(surface_state_list)
+            dirty_list.extend(point_state_list)
+        elif type == "Point":
+            dirty_list.extend(point_state_list)
+
+        if len(dirty_list):
+            self.dirty(*dirty_list)
+
     @property
     def state_handler(self):
         return self._state_handler
@@ -648,7 +778,6 @@ class SubSurfaceModeler:
     def update_grid(self, extent, resolution):
         self._state_handler.grid.extent = extent
         self._state_handler.grid.resolution = resolution
-        # update gempy
         gp.init_data(
             self._geo_model,
             extent=extent,
@@ -665,6 +794,7 @@ class SubSurfaceModeler:
         if self._state_handler.add(type, data):
             if type == "Stack":
                 stack = self._state_handler.find_stack_by_name(data["name"])
+                self.dirty_state(type)
             elif type == "Surface":
                 if "stackname" in data:
                     stack = self._state_handler.find_stack_by_name(data["stackname"])
@@ -687,33 +817,40 @@ class SubSurfaceModeler:
                 isafault = self._state_handler.is_a_fault()
                 if len(isafault) > 0:
                     self._geo_model.set_is_fault(isafault)
+                self.dirty_state(type)
+            elif type == "Point":
+                if "surfacename" in data:
+                    surface = self.state_handler.find_surface_by_name(
+                        data["surfacename"]
+                    )
+                    if surface:
+                        self._geo_model.add_surface_points(
+                            data["x"], data["y"], data["z"], surface.id
+                        )
+                else:
+                    surface = self.state_handler.find_surface_by_id(data["surfaceid"])
+                    if surface:
+                        self._geo_model.add_surface_points(
+                            data["x"], data["y"], data["z"], surface.id
+                        )
+                self.dirty_state(type)
             # print("** GemPy Fault Relations **")
-            print(self._geo_model._faults.faults_relations_df)
+            # print(self._geo_model._faults.faults_relations_df)
             # print("** GemPy Faults **")
-            print(self._geo_model._faults)
+            # print(self._geo_model._faults)
             # print("** GemPy Surfaces **")
-            print(self._geo_model._surfaces)
+            # print(self._geo_model._surfaces)
             self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
 
     def remove(self, type, id):
         """type@html: Stack, Surface, Point, Orientation"""
         if self._state_handler.remove(type, id):
-            self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
+            self.dirty_state(type)
 
     def select(self, type, id):
         """type@app: Stack, Surface, Point, Orientation"""
-        dirty_list = []
         self._state_handler.select(type, id)
-
-        if type == "Stack":
-            dirty_list.extend(
-                ["activeStackId", "surfaces", "activeSurfaceId", "activeStackActions"]
-            )
-        elif type == "Surface":
-            dirty_list.extend(["activeSurfaceId", "activeSurfaceActions"])
-
-        if len(dirty_list):
-            self.dirty(*dirty_list)
+        self.dirty_state(type)
 
     def move(self, type, direction):
         if self._state_handler.move(type, direction):
@@ -782,9 +919,13 @@ class SubSurfaceModeler:
             if stack_data:
                 self.dirty("stacks")
         elif data_type == "surfaces.csv":
-            stack_data = self.parse_surfaces_csv(file_bytes)
-            if stack_data:
+            surface_data = self.parse_surfaces_csv(file_bytes)
+            if surface_data:
                 self.dirty("surfaces")
+        elif data_type == "points.csv":
+            point_data = self.parse_points_csv(file_bytes)
+            if point_data:
+                self.dirty("points")
         elif data_type == "full-model.json":
             full_data = json.loads(file_bytes.decode("utf-8"))
             self._state_handler.import_state(full_data)
@@ -840,8 +981,8 @@ class SubSurfaceModeler:
 
     def parse_surfaces_csv(self, content):
         reader = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=",")
-        stacks = sorted(reader, key=take_order)
-        for row in stacks:
+        surfaces = sorted(reader, key=take_order)
+        for row in surfaces:
             if "formation" in row and "stack" in row and "order" in row:
                 self.add(
                     "Surface", {"name": row["formation"], "stackname": row["stack"]}
@@ -849,4 +990,22 @@ class SubSurfaceModeler:
             else:
                 print("Bad surfaces.csv file")
                 return
-        return stacks
+        return surfaces
+
+    def parse_points_csv(self, content):
+        points = csv.DictReader(content.decode("utf-8").splitlines(), delimiter=",")
+        for row in points:
+            if "X" in row and "Y" in row and "Z" in row and "formation" in row:
+                self.add(
+                    "Point",
+                    {
+                        "x": row["X"],
+                        "y": row["Y"],
+                        "z": row["Z"],
+                        "surfacename": row["formation"],
+                    },
+                )
+            else:
+                print("Bad points.csv file")
+                return
+        return points
