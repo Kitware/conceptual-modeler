@@ -5,7 +5,7 @@ class WorkflowManager:
         self._steps = [
             {"icon": "mdi-grid", "disabled": False, "value": "grid", "label": "Grid"},
             {
-                "icon": "mdi-layers-outline",
+                "icon": "mdi-chart-timeline-variant-shimmer",
                 "disabled": True,
                 "value": "subsurface",
                 "label": "Sub-surface",
