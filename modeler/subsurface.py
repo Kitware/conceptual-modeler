@@ -26,6 +26,11 @@ def create_id_generator(prefix):
         yield f"{prefix}_{count}"
         count += 1
 
+def create_index_generator():
+    count = 1
+    while True:
+        yield count
+        count += 1
 
 # -----------------------------------------------------------------------------
 # Helper classes
@@ -205,9 +210,11 @@ class AbstractSortedList:
 
 class Orientation:
     id_generator = create_id_generator("Orientation")
+    index_generator = create_index_generator()
 
     def __init__(self, x, y, z, gx, gy, gz, parent=None, **kwargs):
         self.id = next(Orientation.id_generator)
+        self.idx = next(Orientation.index_generator)
         self.x = x
         self.y = y
         self.z = z
@@ -262,6 +269,19 @@ class Orientations(AbstractSortedList):
         allowed["up"] = 0
 
         return allowed
+
+    def remove(self, id):
+        if not self.allowed_actions(id).get("remove", False):
+            return
+
+        idx = self[id].idx
+        if self._data.pop(id, None):
+            self._ids.remove(id)
+            if self._active_id == id:
+                self._active_id = None
+            return idx
+
+        return
 
 
 class Point:
@@ -905,7 +925,8 @@ class SubSurfaceModeler:
 
     def add(self, type, data):
         """type@html: Stack, Surface, Point, Orientation"""
-        if self._state_handler.add(type, data):
+        item = self._state_handler.add(type, data)
+        if item:
             if type == "Stack":
                 self.add_stack(type, data)
             elif type == "Surface":
@@ -913,7 +934,8 @@ class SubSurfaceModeler:
             elif type == "Point":
                 self.add_point(type, data)
             elif type == "Orientation":
-                self.add_orientation(type, data)
+                self.add_orientation(item)
+
             # print("** GemPy Fault Relations **")
             # print(self._geo_model._faults.faults_relations_df)
             # print("** GemPy Faults **")
@@ -923,7 +945,10 @@ class SubSurfaceModeler:
 
     def remove(self, type, id):
         """type@html: Stack, Surface, Point, Orientation"""
-        if self._state_handler.remove(type, id):
+        index = self._state_handler.remove(type, id)
+        if index:
+            if type == "Orientation":
+                self.remove_orientation(index)
             self.dirty_state(type)
 
     def select(self, type, id):
@@ -976,29 +1001,20 @@ class SubSurfaceModeler:
                 )
         self.dirty_state(type)
 
-    def add_orientation(self, type, data):
-        if "surfacename" in data:
-            surface = self.state_handler.find_surface_by_name(data["surfacename"])
-            if surface:
-                self._geo_model.add_orientations(
-                    X=data["x"],
-                    Y=data["y"],
-                    Z=data["z"],
-                    surface=surface.id,
-                    pole_vector=[data["gx"], data["gy"], data["gz"]],
-                )
-        else:
-            surface = self.state_handler.find_surface_by_id(data["surfaceid"])
-            if surface:
-                self._geo_model.add_orientations(
-                    X=data["x"],
-                    Y=data["y"],
-                    Z=data["z"],
-                    surface=surface.id,
-                    pole_vector=[data["gx"], data["gy"], data["gz"]],
-                )
-        self.dirty_state(type)
+    def add_orientation(self, orientation):
+        self._geo_model.add_orientations(
+            X=orientation.x,
+            Y=orientation.y,
+            Z=orientation.z,
+            surface=orientation.surface.id,
+            idx=orientation.idx,
+            pole_vector=orientation.poleVector,
+        )
+        self.dirty_state("Orientation")
 
+    def remove_orientation(self, index):
+        self._geo_model.delete_orientations(index)
+        self.dirty_state("Orientation")
     # -----------------------------------------------------
     # Geometry accessors
     # -----------------------------------------------------
