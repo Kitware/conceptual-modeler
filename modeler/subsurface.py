@@ -1,4 +1,5 @@
 import time
+import math
 from enum import Enum, unique
 
 # Added to fix gdal 3.3.0 error
@@ -202,6 +203,67 @@ class AbstractSortedList:
             self._active_id = keep_active_id
 
 
+class Orientation:
+    id_generator = create_id_generator("Orientation")
+
+    def __init__(self, x, y, z, gx, gy, gz, parent=None, **kwargs):
+        self.id = next(Orientation.id_generator)
+        self.x = x
+        self.y = y
+        self.z = z
+        self.poleVector = [gx, gy, gz]
+        self.surface = parent
+
+    @property
+    def html(self):
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+            "gx": self.poleVector[0],
+            "gy": self.poleVector[1],
+            "gz": self.poleVector[2],
+            "surfacename": self.surface.name,
+        }
+
+    def export_state(self, depth=-1):
+        return {
+            "id": self.id,
+            "x": self.x,
+            "y": self.y,
+            "z": self.z,
+            "poleVector": self.poleVector,
+        }
+
+    def out(self):
+        print(self.id, self.x, self.y, self.z, self.poleVector)
+
+    def import_state(self, content):
+        self.x = content.get("x", self.x)
+        self.y = content.get("y", self.y)
+        self.z = content.get("z", self.z)
+        self.poleVector = content.get("poleVector", self.poleVector)
+
+
+class Orientations(AbstractSortedList):
+    def __init__(self, parent):
+        super().__init__(Orientation, parent)
+
+    @property
+    def orientation(self):
+        return self[self.selected_id]
+
+    def allowed_actions(self, id):
+        allowed = super().allowed_actions(id)
+
+        # Don't allow moving orientations
+        allowed["down"] = 0
+        allowed["up"] = 0
+
+        return allowed
+
+
 class Point:
     id_generator = create_id_generator("Point")
 
@@ -264,6 +326,7 @@ class Surface:
         self.id = next(Surface.id_generator)
         self.name = name
         self.points = Points(self)
+        self.orientations = Orientations(self)
         self.stack = parent
 
     @property
@@ -283,7 +346,7 @@ class Surface:
 
         if depth:
             out["points"] = self.points.export_state(depth - 1)
-        # TODO: handle orientations
+            out["orientations"] = self.orientations.export_state(depth - 1)
         return out
 
     def out(self):
@@ -295,7 +358,10 @@ class Surface:
         points = content.get("points", None)
         if points:
             self.points.import_state(points)
-        # TODO: handle orientations
+
+        orientations = content.get("orientations", None)
+        if orientations:
+            self.orientations.import_state(orientations)
 
 
 class Surfaces(AbstractSortedList):
@@ -547,17 +613,23 @@ class StateManager:
     @property
     def client_state(self):
         grid = self.grid.html
-        stacks = self.stacks.html
+        stacks_html = self.stacks.html
         active_stack = self.stacks.stack
         active_stack_id = None
         stack_actions = {}
         surfaces = None
+        surfaces_html = None
         active_surface = None
         active_surface_id = None
         surface_actions = {}
         points = None
+        points_html = None
         active_point_id = None
         point_actions = {}
+        orientations = None
+        orientations_html = None
+        active_orientation_id = None
+        orientation_actions = {}
 
         if active_stack:
             active_stack_id = active_stack.id
@@ -565,29 +637,36 @@ class StateManager:
             surfaces = active_stack.surfaces
 
         if surfaces:
+            surfaces_html = surfaces.html
             active_surface_id = surfaces.selected_id
             surface_actions = surfaces.allowed_actions(active_surface_id)
             active_surface = surfaces.surface
-            surfaces = surfaces.html
 
         if active_surface:
             points = active_surface.points
             active_point_id = points.selected_id
             point_actions = points.allowed_actions(active_point_id)
-            points = points.html
+            points_html = points.html
+            orientations = active_surface.orientations
+            active_orientation_id = orientations.selected_id
+            orientation_actions = orientations.allowed_actions(active_orientation_id)
+            orientations_html = orientations.html
 
         return {
             "features": [a.value for a in Feature],
             "grid": grid,
-            "stacks": stacks,
+            "stacks": stacks_html,
             "activeStackId": active_stack_id,
             "activeStackActions": stack_actions,
-            "surfaces": surfaces,
+            "surfaces": surfaces_html,
             "activeSurfaceId": active_surface_id,
             "activeSurfaceActions": surface_actions,
-            "points": points,
+            "points": points_html,
             "activePointActions": point_actions,
             "activePointId": active_point_id,
+            "orientations": orientations_html,
+            "activeOrientationActions": orientation_actions,
+            "activeOrientationId": active_orientation_id,
             "subsurfaceImportTS": 0,
             "subsurfaceState": None,
         }
@@ -636,9 +715,9 @@ class StateManager:
             if Feature(data["feature"]) == Feature.FAULT:
                 return self.stacks.add_stack(**data)
             else:
-                locationname = self.stacks.find_oldest_fault_name()
-                if locationname:
-                    return self.stacks.insert(locationname, **data)
+                oldest_fault_name = self.stacks.find_oldest_fault_name()
+                if oldest_fault_name:
+                    return self.stacks.insert(oldest_fault_name, **data)
                 else:
                     return self.stacks.add_stack(**data)
         elif type == "Surface":
@@ -657,12 +736,29 @@ class StateManager:
                 surface = self.stacks.find_surface_by_id(data["surfaceid"])
                 if surface:
                     return surface.points.add(**data)
+        elif type == "Orientation":
+            if "surfacename" in data:
+                surface = self.stacks.find_surface_by_name(data["surfacename"])
+                if surface:
+                    return surface.orientations.add(**data)
+            else:
+                surface = self.stacks.find_surface_by_id(data["surfaceid"])
+                if surface:
+                    return surface.orientations.add(**data)
 
     def remove(self, type, id):
         if type == "Stack":
             return self.stacks.remove(id)
         elif type == "Surface" and self.stacks.stack:
             return self.stacks.stack.surfaces.remove(id)
+        elif (
+            type == "Point" and self.stacks.stack and self.stacks.stack.surfaces.surface
+        ):
+            return self.stacks.stack.surfaces.surface.points.remove(id)
+        elif (
+            type == "Orientation" and self.stacks.stack and self.stacks.stack.surfaces.surface
+        ):
+            return self.stacks.stack.surfaces.surface.orientations.remove(id)
 
     def select(self, type, id):
         if type == "Stack":
@@ -682,6 +778,15 @@ class StateManager:
                 self.stacks.stack.surfaces.surface.points.selected_id = id
             else:
                 self.stacks.stack.surfaces.surface.points.selected_id = None
+        elif (
+            type == "Orientation"
+            and self.stacks.stack
+            and self.stacks.stack.surfaces.surface
+        ):
+            if self.stacks.stack.surfaces.surface.orientations.selected_id != id:
+                self.stacks.stack.surfaces.surface.orientations.selected_id = id
+            else:
+                self.stacks.stack.surfaces.surface.orientations.selected_id = None
 
     def import_state(self, parsed_json_structure):
         self.grid.import_state(parsed_json_structure.get("grid", None))
@@ -753,16 +858,25 @@ class SubSurfaceModeler:
         stack_state_list = ["stacks", "activeStackId", "activeStackActions"]
         surface_state_list = ["surfaces", "activeSurfaceId", "activeSurfaceActions"]
         point_state_list = ["points", "activePointId", "activePointActions"]
+        orientation_state_list = [
+            "orientations",
+            "activeOrientationId",
+            "activeOrientationActions",
+        ]
 
         if type == "Stack":
             dirty_list.extend(stack_state_list)
             dirty_list.extend(surface_state_list)
             dirty_list.extend(point_state_list)
+            dirty_list.extend(orientation_state_list)
         elif type == "Surface":
             dirty_list.extend(surface_state_list)
             dirty_list.extend(point_state_list)
+            dirty_list.extend(orientation_state_list)
         elif type == "Point":
             dirty_list.extend(point_state_list)
+        elif type == "Orientation":
+            dirty_list.extend(orientation_state_list)
 
         if len(dirty_list):
             self.dirty(*dirty_list)
@@ -793,54 +907,19 @@ class SubSurfaceModeler:
         """type@html: Stack, Surface, Point, Orientation"""
         if self._state_handler.add(type, data):
             if type == "Stack":
-                stack = self._state_handler.find_stack_by_name(data["name"])
-                self.dirty_state(type)
+                self.add_stack(type, data)
             elif type == "Surface":
-                if "stackname" in data:
-                    stack = self._state_handler.find_stack_by_name(data["stackname"])
-                    surface = stack.surfaces.find_by_name(data["name"])
-                    self._geo_model.add_surfaces(surface.id)
-                else:
-                    stack = self._state_handler.find_stack_by_id(data["stackid"])
-                    surface = stack.surfaces.find_by_name(data["name"])
-                    self._geo_model.add_surfaces(surface.id)
-                mapstacks = self._state_handler.map_stack_to_surfaces()
-                gp.map_stack_to_surfaces(
-                    self._geo_model, mapstacks, remove_unused_series=True
-                )
-                reorderedfeatures = self._state_handler.reorder_features()
-                if len(reorderedfeatures) > 1:
-                    self._geo_model.reorder_features(reorderedfeatures)
-                bottomrelations = self._state_handler.bottom_relations()
-                for layer in bottomrelations:
-                    self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
-                isafault = self._state_handler.is_a_fault()
-                if len(isafault) > 0:
-                    self._geo_model.set_is_fault(isafault)
-                self.dirty_state(type)
+                self.add_surface(type, data)
             elif type == "Point":
-                if "surfacename" in data:
-                    surface = self.state_handler.find_surface_by_name(
-                        data["surfacename"]
-                    )
-                    if surface:
-                        self._geo_model.add_surface_points(
-                            data["x"], data["y"], data["z"], surface.id
-                        )
-                else:
-                    surface = self.state_handler.find_surface_by_id(data["surfaceid"])
-                    if surface:
-                        self._geo_model.add_surface_points(
-                            data["x"], data["y"], data["z"], surface.id
-                        )
-                self.dirty_state(type)
+                self.add_point(type, data)
+            elif type == "Orientation":
+                self.add_orientation(type, data)
             # print("** GemPy Fault Relations **")
             # print(self._geo_model._faults.faults_relations_df)
             # print("** GemPy Faults **")
             # print(self._geo_model._faults)
             # print("** GemPy Surfaces **")
             # print(self._geo_model._surfaces)
-            self.dirty(f"active{type}Id", f"{type.lower()}s", f"active{type}Actions")
 
     def remove(self, type, id):
         """type@html: Stack, Surface, Point, Orientation"""
@@ -855,6 +934,70 @@ class SubSurfaceModeler:
     def move(self, type, direction):
         if self._state_handler.move(type, direction):
             self.dirty(f"{type.lower()}s", f"active{type}Actions")
+
+    def add_stack(self, type, data):
+        stack = self._state_handler.find_stack_by_name(data["name"])
+        self.dirty_state(type)
+
+    def add_surface(self, type, data):
+        if "stackname" in data:
+            stack = self._state_handler.find_stack_by_name(data["stackname"])
+            surface = stack.surfaces.find_by_name(data["name"])
+            self._geo_model.add_surfaces(surface.id)
+        else:
+            stack = self._state_handler.find_stack_by_id(data["stackid"])
+            surface = stack.surfaces.find_by_name(data["name"])
+            self._geo_model.add_surfaces(surface.id)
+        mapstacks = self._state_handler.map_stack_to_surfaces()
+        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
+        reorderedfeatures = self._state_handler.reorder_features()
+        if len(reorderedfeatures) > 1:
+            self._geo_model.reorder_features(reorderedfeatures)
+        bottomrelations = self._state_handler.bottom_relations()
+        for layer in bottomrelations:
+            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
+        isafault = self._state_handler.is_a_fault()
+        if len(isafault) > 0:
+            self._geo_model.set_is_fault(isafault)
+        self.dirty_state(type)
+
+    def add_point(self, type, data):
+        if "surfacename" in data:
+            surface = self.state_handler.find_surface_by_name(data["surfacename"])
+            if surface:
+                self._geo_model.add_surface_points(
+                    data["x"], data["y"], data["z"], surface.id
+                )
+        else:
+            surface = self.state_handler.find_surface_by_id(data["surfaceid"])
+            if surface:
+                self._geo_model.add_surface_points(
+                    data["x"], data["y"], data["z"], surface.id
+                )
+        self.dirty_state(type)
+
+    def add_orientation(self, type, data):
+        if "surfacename" in data:
+            surface = self.state_handler.find_surface_by_name(data["surfacename"])
+            if surface:
+                self._geo_model.add_orientations(
+                    X=data["x"],
+                    Y=data["y"],
+                    Z=data["z"],
+                    surface=surface.id,
+                    pole_vector=[data["gx"], data["gy"], data["gz"]],
+                )
+        else:
+            surface = self.state_handler.find_surface_by_id(data["surfaceid"])
+            if surface:
+                self._geo_model.add_orientations(
+                    X=data["x"],
+                    Y=data["y"],
+                    Z=data["z"],
+                    surface=surface.id,
+                    pole_vector=[data["gx"], data["gy"], data["gz"]],
+                )
+        self.dirty_state(type)
 
     # -----------------------------------------------------
     # Geometry accessors
@@ -926,6 +1069,10 @@ class SubSurfaceModeler:
             point_data = self.parse_points_csv(file_bytes)
             if point_data:
                 self.dirty("points")
+        elif data_type == "orientations.csv":
+            orientation_data = self.parse_orientations_csv(file_bytes)
+            if orientation_data:
+                self.dirty("orientations")
         elif data_type == "full-model.json":
             full_data = json.loads(file_bytes.decode("utf-8"))
             self._state_handler.import_state(full_data)
@@ -1009,3 +1156,61 @@ class SubSurfaceModeler:
                 print("Bad points.csv file")
                 return
         return points
+
+    def parse_orientations_csv(self, content):
+        orientations = csv.DictReader(
+            content.decode("utf-8").splitlines(), delimiter=","
+        )
+        for row in orientations:
+            if (
+                "X" in row
+                and "Y" in row
+                and "Z" in row
+                and "G_x" in row
+                and "G_y" in row
+                and "G_z" in row
+                and "formation" in row
+            ):
+                self.add(
+                    "Orientation",
+                    {
+                        "x": row["X"],
+                        "y": row["Y"],
+                        "z": row["Z"],
+                        "gx": row["G_x"],
+                        "gy": row["G_y"],
+                        "gz": row["G_z"],
+                        "surfacename": row["formation"],
+                    },
+                )
+            elif (
+                "X" in row
+                and "Y" in row
+                and "Z" in row
+                and "dip" in row
+                and "azimuth" in row
+                and "polarity" in row
+                and "formation" in row
+            ):
+                diprad = row["dip"] * math.pi / 180.0
+                azimuthrad = row["azimuth"] * math.pi / 180.0
+                polarity = row["polarity"]
+                gx = math.sin(diprad) * math.sin(azimuthrad) * polarity + 1e-12
+                gy = math.sin(diprad) * math.cos(azimuthrad) * polarity + 1e-12
+                gz = math.cos(diprad) * polarity + 1e-12
+                self.add(
+                    "Orientation",
+                    {
+                        "x": row["X"],
+                        "y": row["Y"],
+                        "z": row["Z"],
+                        "gx": gx,
+                        "gy": gy,
+                        "gz": gz,
+                        "surfacename": row["formation"],
+                    },
+                )
+            else:
+                print("Bad orientations.csv file")
+                return
+        return orientations

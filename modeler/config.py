@@ -1,11 +1,20 @@
 DEFAULT_NEW_STACK = {"name": "", "feature": "Erosion"}
 DEFAULT_NEW_SURFACE = {"name": "", "stackid": ""}
 DEFAULT_NEW_POINT = {"x": "", "y": "", "z": "", "surfaceid": ""}
-
+DEFAULT_NEW_ORIENTATION = {
+    "x": "",
+    "y": "",
+    "z": "",
+    "gx": "",
+    "gy": "",
+    "gz": "",
+    "surfaceid": "",
+}
 DEFAULT_NEW = {
     "Stack": DEFAULT_NEW_STACK,
     "Surface": DEFAULT_NEW_SURFACE,
     "Point": DEFAULT_NEW_POINT,
+    "Orientation": DEFAULT_NEW_ORIENTATION,
 }
 
 shared_state = {
@@ -13,6 +22,7 @@ shared_state = {
     "stackNew": DEFAULT_NEW_STACK,
     "surfaceNew": DEFAULT_NEW_SURFACE,
     "pointNew": DEFAULT_NEW_POINT,
+    "orientationNew": DEFAULT_NEW_ORIENTATION,
     # Handling data injestion
     "fileName": "",
     "exportShow": False,
@@ -24,6 +34,8 @@ shared_state = {
         {"text": "Grid as CSV", "value": "grid.csv"},
         {"text": "Stacks as CSV", "value": "stacks.csv"},
         {"text": "Surfaces as CSV", "value": "surfaces.csv"},
+        {"text": "Points as CSV", "value": "points.csv"},
+        {"text": "Orientations as CSV", "value": "orientations.csv"},
     ],
     # GemPy structures
     # Visualization
@@ -57,16 +69,17 @@ vuetify = {
             "grid": "mdi-grid",
             "fault": "mdi-slash-forward",
             "faults": "mdi-abjad-hebrew",
-            "surface": "mdi-texture-box",
+            "surface": "mdi-rhombus-outline",
             "surfaces": "mdi-layers-outline",
             "onlap": "mdi-wave",
             "onlaps": "mdi-waves",
             "stack": "mdi-chart-timeline-variant",
             "stacks": "mdi-chart-timeline-variant-shimmer",
             "topography": "mdi-image-filter-hdr",
-            "point": "mdi-record-circle-outline",
+            "point": "mdi-circle",
             "points": "mdi-chart-bubble",
-            "orientation": "mdi-compass-outline",
+            "orientation": "mdi-compass",
+            "orientations": "mdi-math-compass",
             "compute": "mdi-desktop-classic",
             # app layout
             "singleView": "mdi-border-all-variant",
