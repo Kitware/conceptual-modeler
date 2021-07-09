@@ -428,6 +428,18 @@ class Surfaces(AbstractSortedList):
         results.reverse()
         return results
 
+    def remove(self, id):
+        if not self.allowed_actions(id).get("remove", False):
+            return
+
+        if self._data.pop(id, None):
+            self._ids.remove(id)
+            if self._active_id == id:
+                self._active_id = None
+            return id
+
+        return
+
     def add_surface(self, name, **kwargs):
         if not self.allowed_actions(self._active_id).get("add", False):
             return False
@@ -949,7 +961,7 @@ class SubSurfaceModeler:
             if type == "Stack":
                 self.add_stack(type, data)
             elif type == "Surface":
-                self.add_surface(type, data)
+                self.add_surface(item)
             elif type == "Point":
                 self.add_point(item)
             elif type == "Orientation":
@@ -966,6 +978,8 @@ class SubSurfaceModeler:
         """type@html: Stack, Surface, Point, Orientation"""
         index = self._state_handler.remove(type, id)
         if index:
+            if type == "Surface":
+                self.remove_surface(index)
             if type == "Point":
                 self.remove_point(index)
             if type == "Orientation":
@@ -985,15 +999,8 @@ class SubSurfaceModeler:
         stack = self._state_handler.find_stack_by_name(data["name"])
         self.dirty_state(type)
 
-    def add_surface(self, type, data):
-        if "stackname" in data:
-            stack = self._state_handler.find_stack_by_name(data["stackname"])
-            surface = stack.surfaces.find_by_name(data["name"])
-            self._geo_model.add_surfaces(surface.id)
-        else:
-            stack = self._state_handler.find_stack_by_id(data["stackid"])
-            surface = stack.surfaces.find_by_name(data["name"])
-            self._geo_model.add_surfaces(surface.id)
+    def add_surface(self, surface):
+        self._geo_model.add_surfaces(surface.id)
         mapstacks = self._state_handler.map_stack_to_surfaces()
         gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
         reorderedfeatures = self._state_handler.reorder_features()
@@ -1005,7 +1012,22 @@ class SubSurfaceModeler:
         isafault = self._state_handler.is_a_fault()
         if len(isafault) > 0:
             self._geo_model.set_is_fault(isafault)
-        self.dirty_state(type)
+        self.dirty_state("Surface")
+
+    def remove_surface(self, id):
+        self._geo_model.delete_surfaces(id)
+        mapstacks = self._state_handler.map_stack_to_surfaces()
+        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
+        reorderedfeatures = self._state_handler.reorder_features()
+        if len(reorderedfeatures) > 1:
+            self._geo_model.reorder_features(reorderedfeatures)
+        bottomrelations = self._state_handler.bottom_relations()
+        for layer in bottomrelations:
+            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
+        isafault = self._state_handler.is_a_fault()
+        if len(isafault) > 0:
+            self._geo_model.set_is_fault(isafault)
+        self.dirty_state("Surface")
 
     def add_point(self, point):
         self._geo_model.add_surface_points(
