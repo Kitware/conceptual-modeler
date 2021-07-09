@@ -813,31 +813,35 @@ class StateManager:
 
     def select(self, type, id):
         if type == "Stack":
-            if self.stacks.selected_id != id:
-                self.stacks.selected_id = id
+            stacks = self.stacks
+            if stacks.selected_id != id:
+                stacks.selected_id = id
             else:
-                self.stacks.selected_id = None
+                stacks.selected_id = None
         elif type == "Surface" and self.stacks.stack:
-            if self.stacks.stack.surfaces.selected_id != id:
-                self.stacks.stack.surfaces.selected_id = id
+            surfaces = self.stacks.stack.surfaces
+            if surfaces.selected_id != id:
+                surfaces.selected_id = id
             else:
-                self.stacks.stack.surfaces.selected_id = None
+                surfaces.selected_id = None
         elif (
             type == "Point" and self.stacks.stack and self.stacks.stack.surfaces.surface
         ):
-            if self.stacks.stack.surfaces.surface.points.selected_id != id:
-                self.stacks.stack.surfaces.surface.points.selected_id = id
+            points = self.stacks.stack.surfaces.surface.points
+            if points.selected_id != id:
+                points.selected_id = id
             else:
-                self.stacks.stack.surfaces.surface.points.selected_id = None
+                points.selected_id = None
         elif (
             type == "Orientation"
             and self.stacks.stack
             and self.stacks.stack.surfaces.surface
         ):
-            if self.stacks.stack.surfaces.surface.orientations.selected_id != id:
-                self.stacks.stack.surfaces.surface.orientations.selected_id = id
+            orientations = self.stacks.stack.surfaces.surface.orientations
+            if orientations.selected_id != id:
+                orientations.selected_id = id
             else:
-                self.stacks.stack.surfaces.surface.orientations.selected_id = None
+                orientations.selected_id = None
 
     def import_state(self, parsed_json_structure):
         self.grid.import_state(parsed_json_structure.get("grid", None))
