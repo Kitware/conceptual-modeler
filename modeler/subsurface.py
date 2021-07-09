@@ -26,11 +26,13 @@ def create_id_generator(prefix):
         yield f"{prefix}_{count}"
         count += 1
 
+
 def create_index_generator():
     count = 1
     while True:
         yield count
         count += 1
+
 
 # -----------------------------------------------------------------------------
 # Helper classes
@@ -286,9 +288,11 @@ class Orientations(AbstractSortedList):
 
 class Point:
     id_generator = create_id_generator("Point")
+    index_generator = create_index_generator()
 
     def __init__(self, x, y, z, parent=None, **kwargs):
         self.id = next(Point.id_generator)
+        self.idx = next(Point.index_generator)
         self.x = x
         self.y = y
         self.z = z
@@ -337,6 +341,19 @@ class Points(AbstractSortedList):
         allowed["up"] = 0
 
         return allowed
+
+    def remove(self, id):
+        if not self.allowed_actions(id).get("remove", False):
+            return
+
+        idx = self[id].idx
+        if self._data.pop(id, None):
+            self._ids.remove(id)
+            if self._active_id == id:
+                self._active_id = None
+            return idx
+
+        return
 
 
 class Surface:
@@ -776,7 +793,9 @@ class StateManager:
         ):
             return self.stacks.stack.surfaces.surface.points.remove(id)
         elif (
-            type == "Orientation" and self.stacks.stack and self.stacks.stack.surfaces.surface
+            type == "Orientation"
+            and self.stacks.stack
+            and self.stacks.stack.surfaces.surface
         ):
             return self.stacks.stack.surfaces.surface.orientations.remove(id)
 
@@ -932,7 +951,7 @@ class SubSurfaceModeler:
             elif type == "Surface":
                 self.add_surface(type, data)
             elif type == "Point":
-                self.add_point(type, data)
+                self.add_point(item)
             elif type == "Orientation":
                 self.add_orientation(item)
 
@@ -947,6 +966,8 @@ class SubSurfaceModeler:
         """type@html: Stack, Surface, Point, Orientation"""
         index = self._state_handler.remove(type, id)
         if index:
+            if type == "Point":
+                self.remove_point(index)
             if type == "Orientation":
                 self.remove_orientation(index)
             self.dirty_state(type)
@@ -986,20 +1007,19 @@ class SubSurfaceModeler:
             self._geo_model.set_is_fault(isafault)
         self.dirty_state(type)
 
-    def add_point(self, type, data):
-        if "surfacename" in data:
-            surface = self.state_handler.find_surface_by_name(data["surfacename"])
-            if surface:
-                self._geo_model.add_surface_points(
-                    data["x"], data["y"], data["z"], surface.id
-                )
-        else:
-            surface = self.state_handler.find_surface_by_id(data["surfaceid"])
-            if surface:
-                self._geo_model.add_surface_points(
-                    data["x"], data["y"], data["z"], surface.id
-                )
-        self.dirty_state(type)
+    def add_point(self, point):
+        self._geo_model.add_surface_points(
+            X=point.x,
+            Y=point.y,
+            Z=point.z,
+            surface=point.surface.id,
+            idx=point.idx,
+        )
+        self.dirty_state("Point")
+
+    def remove_point(self, index):
+        self._geo_model.delete_surface_points(index)
+        self.dirty_state("Point")
 
     def add_orientation(self, orientation):
         self._geo_model.add_orientations(
@@ -1015,6 +1035,7 @@ class SubSurfaceModeler:
     def remove_orientation(self, index):
         self._geo_model.delete_orientations(index)
         self.dirty_state("Orientation")
+
     # -----------------------------------------------------
     # Geometry accessors
     # -----------------------------------------------------
