@@ -547,6 +547,20 @@ class Stacks(AbstractSortedList):
         self._append_new_id(item.id)
         return item
 
+    def remove(self, id):
+        if not self.allowed_actions(id).get("remove", False):
+            return
+
+        stack = self._data[id]
+        ids = stack.surfaces.ids
+        if self._data.pop(id, None):
+            self._ids.remove(id)
+            if self._active_id == id:
+                self._active_id = None
+            return ids
+
+        return
+
     def find_by_name(self, name):
         for stack in self._data.values():
             if stack.name == name:
@@ -982,6 +996,8 @@ class SubSurfaceModeler:
         """type@html: Stack, Surface, Point, Orientation"""
         index = self._state_handler.remove(type, id)
         if index:
+            if type == "Stack":
+                self.remove_stack(index)
             if type == "Surface":
                 self.remove_surface(index)
             if type == "Point":
@@ -1002,6 +1018,22 @@ class SubSurfaceModeler:
     def add_stack(self, type, data):
         stack = self._state_handler.find_stack_by_name(data["name"])
         self.dirty_state(type)
+
+    def remove_stack(self, ids):
+        for id in ids:
+            self._geo_model.delete_surfaces(id)
+        mapstacks = self._state_handler.map_stack_to_surfaces()
+        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
+        reorderedfeatures = self._state_handler.reorder_features()
+        if len(reorderedfeatures) > 1:
+            self._geo_model.reorder_features(reorderedfeatures)
+        bottomrelations = self._state_handler.bottom_relations()
+        for layer in bottomrelations:
+            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
+        isafault = self._state_handler.is_a_fault()
+        if len(isafault) > 0:
+            self._geo_model.set_is_fault(isafault)
+        self.dirty_state("Stack")
 
     def add_surface(self, surface):
         self._geo_model.add_surfaces(surface.id)
