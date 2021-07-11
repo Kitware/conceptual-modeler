@@ -955,7 +955,7 @@ class SubSurfaceModeler:
         return self._state_handler
 
     # -----------------------------------------------------
-    # Grid
+    # State mutation
     # -----------------------------------------------------
 
     def update_grid(self, extent, resolution):
@@ -968,16 +968,12 @@ class SubSurfaceModeler:
         )
         self.dirty("grid")
 
-    # -----------------------------------------------------
-    # State mutation
-    # -----------------------------------------------------
-
     def add(self, type, data):
         """type@html: Stack, Surface, Point, Orientation"""
         item = self._state_handler.add(type, data)
         if item:
             if type == "Stack":
-                self.add_stack(type, data)
+                self.add_stack(item)
             elif type == "Surface":
                 self.add_surface(item)
             elif type == "Point":
@@ -1013,56 +1009,39 @@ class SubSurfaceModeler:
 
     def move(self, type, direction):
         if self._state_handler.move(type, direction):
-            self.dirty(f"{type.lower()}s", f"active{type}Actions")
+            if type == "Stack":
+                self.move_stack()
+            if type == "Surface":
+                self.move_surface()
 
-    def add_stack(self, type, data):
-        stack = self._state_handler.find_stack_by_name(data["name"])
-        self.dirty_state(type)
+    def add_stack(self, stack):
+        self.dirty_state("Stack")
 
     def remove_stack(self, ids):
         for id in ids:
             self._geo_model.delete_surfaces(id)
-        mapstacks = self._state_handler.map_stack_to_surfaces()
-        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
-        reorderedfeatures = self._state_handler.reorder_features()
-        if len(reorderedfeatures) > 1:
-            self._geo_model.reorder_features(reorderedfeatures)
-        bottomrelations = self._state_handler.bottom_relations()
-        for layer in bottomrelations:
-            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
+        self.reordering()
         isafault = self._state_handler.is_a_fault()
         if len(isafault) > 0:
             self._geo_model.set_is_fault(isafault)
         self.dirty_state("Stack")
 
+    def move_stack(self):
+        self.reordering()
+        self.dirty_state("Stack")
+
     def add_surface(self, surface):
         self._geo_model.add_surfaces(surface.id)
-        mapstacks = self._state_handler.map_stack_to_surfaces()
-        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
-        reorderedfeatures = self._state_handler.reorder_features()
-        if len(reorderedfeatures) > 1:
-            self._geo_model.reorder_features(reorderedfeatures)
-        bottomrelations = self._state_handler.bottom_relations()
-        for layer in bottomrelations:
-            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
-        isafault = self._state_handler.is_a_fault()
-        if len(isafault) > 0:
-            self._geo_model.set_is_fault(isafault)
+        self.reordering()
         self.dirty_state("Surface")
 
     def remove_surface(self, id):
         self._geo_model.delete_surfaces(id)
-        mapstacks = self._state_handler.map_stack_to_surfaces()
-        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
-        reorderedfeatures = self._state_handler.reorder_features()
-        if len(reorderedfeatures) > 1:
-            self._geo_model.reorder_features(reorderedfeatures)
-        bottomrelations = self._state_handler.bottom_relations()
-        for layer in bottomrelations:
-            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
-        isafault = self._state_handler.is_a_fault()
-        if len(isafault) > 0:
-            self._geo_model.set_is_fault(isafault)
+        self.reordering()
+        self.dirty_state("Surface")
+
+    def move_surface(self):
+        self.reordering()
         self.dirty_state("Surface")
 
     def add_point(self, point):
@@ -1093,6 +1072,16 @@ class SubSurfaceModeler:
     def remove_orientation(self, index):
         self._geo_model.delete_orientations(index)
         self.dirty_state("Orientation")
+
+    def reordering(self):
+        mapstacks = self._state_handler.map_stack_to_surfaces()
+        gp.map_stack_to_surfaces(self._geo_model, mapstacks, remove_unused_series=True)
+        reorderedfeatures = self._state_handler.reorder_features()
+        if len(reorderedfeatures) > 1:
+            self._geo_model.reorder_features(reorderedfeatures)
+        bottomrelations = self._state_handler.bottom_relations()
+        for layer in bottomrelations:
+            self._geo_model.set_bottom_relation(layer["name"], layer["feature"])
 
     # -----------------------------------------------------
     # Geometry accessors
