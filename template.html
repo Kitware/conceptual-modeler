@@ -5,7 +5,13 @@
     <v-btn-toggle v-model="activeStep" dense>
       <v-tooltip bottom v-for="item, idx in steps" :key="idx">
         <template v-slot:activator="{ on, attrs }">
-          <v-btn v-bind="attrs" v-on="on" :value="item.value" :disabled="item.disabled" small>
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+            :value="item.value"
+            :disabled="item.disabled"
+            small
+          >
             <v-icon v-text="item.icon" />
           </v-btn>
         </template>
@@ -31,38 +37,96 @@
       </v-tooltip>
     </v-btn-toggle>
     <v-spacer />
-    <v-btn tile small icon @click="importShow = !importShow" :color="importShow ? 'primary' : ''">
+    <v-btn
+      tile
+      small
+      icon
+      @click="importShow = !importShow"
+      :color="importShow ? 'primary' : ''"
+    >
       <v-icon v-text="`$load`" />
     </v-btn>
-    <v-btn tile small icon :color="exportShow ? 'primary' : ''" @click="trigger('export')">
+    <v-btn
+      tile
+      small
+      icon
+      :color="exportShow ? 'primary' : ''"
+      @click="trigger('export')"
+    >
       <v-icon v-text="`$save`" />
     </v-btn>
-
+    <v-btn
+      tile
+      small
+      icon
+      :color="computeShow ? 'primary' : ''"
+      @click="trigger('compute')"
+    >
+      <v-icon v-text="`$compute`" />
+    </v-btn>
+    <v-btn
+      tile
+      small
+      icon
+      @click="trigger('resetCamera')"
+    >
+      <v-icon v-text="`$resetCamera`" />
+    </v-btn>
     <v-progress-linear indeterminate absolute bottom :active="busy" />
   </v-app-bar>
   <v-main>
     <!-- import dialog -->
-    <v-card style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px" v-show="importShow" class="ma-2">
+    <v-card
+      style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px"
+      v-show="importShow"
+      class="ma-2"
+    >
       <v-card-text>
-        <v-select v-model="importType" :items="importTypes" label="Data type to import" />
-        <v-file-input v-show="importType" show-size small-chips truncate-length="25" v-model="importFile" dense
-          hide-details accept=".csv,.json,.npy" style="max-width: 300px" />
+        <v-select
+          v-model="importType"
+          :items="importTypes"
+          label="Data type to import"
+        />
+        <v-file-input
+          v-show="importType"
+          show-size
+          small-chips
+          truncate-length="25"
+          v-model="importFile"
+          dense
+          hide-details
+          accept=".csv,.json,.npy"
+          style="max-width: 300px"
+        />
       </v-card-text>
     </v-card>
     <!-- export dialog -->
-    <v-card style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px"
-      v-show="exportShow && subsurfaceState" class="ma-2 pa-2">
+    <v-card
+      style="position: absolute; right: 0; top: 0; z-index: 1; width: 300px"
+      v-show="exportShow && subsurfaceState"
+      class="ma-2 pa-2"
+    >
       <v-card-text>
         <v-row>
-          <v-text-field dense label="FileName" v-model="fileName" hide-details class="mr-2" />
-          <v-btn icon @click="download(fileName, JSON.stringify(subsurfaceState));exportShow=false">
+          <v-text-field
+            dense
+            label="FileName"
+            v-model="fileName"
+            hide-details
+            class="mr-2"
+          />
+          <v-btn
+            icon
+            @click="download(fileName, JSON.stringify(subsurfaceState));exportShow=false"
+          >
             <v-icon v-text="`$download`" />
           </v-btn>
         </v-row>
       </v-card-text>
     </v-card>
     <!-- floating controllers -->
-    <div style="
+    <div
+      style="
         position: absolute;
         left: 0;
         top: 0;
@@ -71,59 +135,116 @@
         overflow: auto;
         max-height: 100%;
         scrollbar-width: none;
-      ">
+      "
+    >
       <!-- grid -->
       <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'grid'">
-        <v-card-title class="grey lighten-1 py-0 grey--text text--darken-3" style="user-select: none; cursor: pointer">
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
           <v-icon class="mr-3" color="grey darken-3" v-text="`$grid`" />
           Grid
           <v-spacer />
-          <v-btn @click="importType='grid.csv';document.getElementById('csvGridFile').click();" dense icon tile small>
+          <v-btn
+            @click="importType='grid.csv';document.getElementById('csvGridFile').click();"
+            dense
+            icon
+            tile
+            small
+          >
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input id="csvGridFile" type="file" style="display: none" @change="importFile=$event.target.files[0]" />
+            <input
+              id="csvGridFile"
+              type="file"
+              style="display: none"
+              @change="importFile=$event.target.files[0]"
+            />
           </v-btn>
         </v-card-title>
         <v-card-text class="pb-0 mb-n2">
           <v-col dense cols="12" class="pt-4">
-            <v-row class="pl-2 pt-2 ml-n5 rounded" style="border-left: solid 2px #546e7a">
+            <v-row
+              class="pl-2 pt-2 ml-n5 rounded"
+              style="border-left: solid 2px #546e7a"
+            >
               <v-tooltip right>
                 <template v-slot:activator="{ on, attrs }">
                   <v-row dense v-bind="attrs" v-on="on">
                     <v-col class="pb-0" cols="6">
-                      <v-text-field dense label="X min" v-model="grid.extent[0]" />
+                      <v-text-field
+                        dense
+                        label="X min"
+                        v-model="grid.extent[0]"
+                      />
                     </v-col>
                     <v-col cols="6">
-                      <v-text-field dense label="X max" v-model="grid.extent[1]" />
+                      <v-text-field
+                        dense
+                        label="X max"
+                        v-model="grid.extent[1]"
+                      />
                     </v-col>
                     <v-col cols="6">
-                      <v-text-field dense label="Y min" v-model="grid.extent[2]" />
+                      <v-text-field
+                        dense
+                        label="Y min"
+                        v-model="grid.extent[2]"
+                      />
                     </v-col>
                     <v-col cols="6">
-                      <v-text-field dense label="Y max" v-model="grid.extent[3]" />
+                      <v-text-field
+                        dense
+                        label="Y max"
+                        v-model="grid.extent[3]"
+                      />
                     </v-col>
                     <v-col cols="6">
-                      <v-text-field dense label="Z min" v-model="grid.extent[4]" />
+                      <v-text-field
+                        dense
+                        label="Z min"
+                        v-model="grid.extent[4]"
+                      />
                     </v-col>
                     <v-col cols="6">
-                      <v-text-field dense label="Z max" v-model="grid.extent[5]" />
+                      <v-text-field
+                        dense
+                        label="Z max"
+                        v-model="grid.extent[5]"
+                      />
                     </v-col>
                   </v-row>
                 </template>
                 <span>Extent</span>
               </v-tooltip>
             </v-row>
-            <v-row class="mt-4 pl-2 pt-2 ml-n5 rounded" style="border-left: solid 2px #546e7a">
+            <v-row
+              class="mt-4 pl-2 pt-2 ml-n5 rounded"
+              style="border-left: solid 2px #546e7a"
+            >
               <v-tooltip right>
                 <template v-slot:activator="{ on, attrs }">
                   <v-row dense v-bind="attrs" v-on="on">
                     <v-col cols="12" sm="4">
-                      <v-text-field dense label="NX" v-model="grid.resolution[0]" />
+                      <v-text-field
+                        dense
+                        label="NX"
+                        v-model="grid.resolution[0]"
+                      />
                     </v-col>
                     <v-col cols="12" sm="4">
-                      <v-text-field dense label="NY" v-model="grid.resolution[1]" />
+                      <v-text-field
+                        dense
+                        label="NY"
+                        v-model="grid.resolution[1]"
+                      />
                     </v-col>
                     <v-col cols="12" sm="4">
-                      <v-text-field dense label="NZ" v-model="grid.resolution[2]" />
+                      <v-text-field
+                        dense
+                        label="NZ"
+                        v-model="grid.resolution[2]"
+                      />
                     </v-col>
                   </v-row>
                 </template>
@@ -134,31 +255,66 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn class="ma-0" dense small icon tile @click="trigger('grid', ['cancel', grid])">
+          <v-btn
+            class="ma-0"
+            dense
+            small
+            icon
+            tile
+            @click="trigger('grid', ['cancel', grid])"
+          >
             <v-icon color="error" v-text="`$cancel`" />
           </v-btn>
-          <v-btn class="ma-0" color="apply" dense small icon tile @click="trigger('grid', ['save', grid])">
+          <v-btn
+            class="ma-0"
+            color="apply"
+            dense
+            small
+            icon
+            tile
+            @click="trigger('grid', ['save', grid])"
+          >
             <v-icon color="success" v-text="`$apply`" />
           </v-btn>
         </v-card-actions>
       </v-card>
       <!-- Stack -->
-      <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'subsurface'">
-        <v-card-title class="grey lighten-1 py-0 grey--text text--darken-3" style="user-select: none; cursor: pointer">
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
           <v-icon class="mr-3" color="grey darken-3" v-text="`$stacks`" />
           Stacks
           <v-spacer />
-          <v-btn @click="importType='stacks.csv';document.getElementById('csvStacksFile').click();" dense icon tile
-            small>
+          <v-btn
+            @click="importType='stacks.csv';document.getElementById('csvStacksFile').click();"
+            dense
+            icon
+            tile
+            small
+          >
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input id="csvStacksFile" type="file" style="display: none" @change="importFile=$event.target.files[0]" />
+            <input
+              id="csvStacksFile"
+              type="file"
+              style="display: none"
+              @change="importFile=$event.target.files[0]"
+            />
           </v-btn>
         </v-card-title>
         <v-card-text class="pb-0 mb-n2 px-0">
           <v-list dense>
-            <v-list-item v-for="(stack, index) in stacks" :key="index"
+            <v-list-item
+              v-for="(stack, index) in stacks"
+              :key="index"
               :class="{ 'v-item--active v-list-item--active': stack.id === activeStackId }"
-              @click="trigger('ss_select',['Stack', stack.id])" color="primary">
+              @click="trigger('ss_select',['Stack', stack.id])"
+              color="primary"
+            >
               <v-list-item-icon v-if="stack.feature === 'Fault'">
                 <v-icon class="float-left" v-text="`$faults`" />
               </v-list-item-icon>
@@ -180,52 +336,118 @@
         </v-card-text>
         <v-card-actions class="pa-0">
           <v-row dense v-show="!activeStackId" class="mt-3 mx-1">
-            <v-text-field class="mx-1" dense v-model="stackNew.name" label="Name" hide-details style="max-width: 40%" />
-            <v-select class="mx-1" dense :items="features" label="Feature Type" v-model="stackNew.feature"
-              style="max-width: 40%" />
+            <v-text-field
+              class="mx-1"
+              dense
+              v-model="stackNew.name"
+              label="Name"
+              hide-details
+              style="max-width: 40%"
+            />
+            <v-select
+              class="mx-1"
+              dense
+              :items="features"
+              label="Feature Type"
+              v-model="stackNew.feature"
+              style="max-width: 40%"
+            />
             <v-spacer />
-            <v-btn class="float-right" dense icon small color="success" @click="trigger('ss_new', ['Stack', stackNew])">
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="trigger('ss_new', ['Stack', stackNew])"
+            >
               <v-icon v-text="`$add`" />
             </v-btn>
           </v-row>
           <v-row dense v-show="activeStackId" class="mt-3 mb-3 mx-1">
-            <v-btn dense icon small color="grey darken-3" @click="trigger('ss_move', ['Stack', 'up'])"
-              :disabled="!activeStackActions.up">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['Stack', 'up'])"
+              :disabled="!activeStackActions.up"
+            >
               <v-icon v-text="`$up`" />
             </v-btn>
-            <v-btn dense icon small color="grey darken-3" @click="trigger('ss_move', ['Stack', 'down'])"
-              :disabled="!activeStackActions.down">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['Stack', 'down'])"
+              :disabled="!activeStackActions.down"
+            >
               <v-icon v-text="`$down`" />
             </v-btn>
             <v-spacer />
-            <v-btn dense icon small color="error" @click="trigger('ss_remove', ['Stack', activeStackId])"
-              :disabled="!activeStackActions.remove">
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['Stack', activeStackId])"
+              :disabled="!activeStackActions.remove"
+            >
               <v-icon v-text="`$delete`" />
             </v-btn>
-            <v-btn class="float-right" dense icon small color="success" @click="activeStackId = ''"
-              :disabled="!activeStackActions.add">
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activeStackId = ''"
+              :disabled="!activeStackActions.add"
+            >
               <v-icon v-text="`$add`" />
             </v-btn>
           </v-row>
         </v-card-actions>
       </v-card>
       <!-- Surfaces -->
-      <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'subsurface'">
-        <v-card-title class="grey lighten-1 py-0 grey--text text--darken-3" style="user-select: none; cursor: pointer">
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
           <v-icon class="mr-3" color="grey darken-3" v-text="`$surfaces`" />
           Surfaces
           <v-spacer />
-          <v-btn @click="importType='surfaces.csv';document.getElementById('csvSurfacesFile').click();" dense icon tile
-            small>
+          <v-btn
+            @click="importType='surfaces.csv';document.getElementById('csvSurfacesFile').click();"
+            dense
+            icon
+            tile
+            small
+          >
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input id="csvSurfacesFile" type="file" style="display: none" @change="importFile=$event.target.files[0]" />
+            <input
+              id="csvSurfacesFile"
+              type="file"
+              style="display: none"
+              @change="importFile=$event.target.files[0]"
+            />
           </v-btn>
         </v-card-title>
         <v-card-text v-show="activeStackId" class="pb-0 mb-n2 px-0">
           <v-list dense>
-            <v-list-item v-for="(surface, index) in surfaces" :key="index" :value="surface.id"
+            <v-list-item
+              v-for="(surface, index) in surfaces"
+              :key="index"
+              :value="surface.id"
               :class="{ 'v-item--active v-list-item--active': surface.id === activeSurfaceId }"
-              @click="trigger('ss_select',['Surface', surface.id])" color="primary">
+              @click="trigger('ss_select',['Surface', surface.id])"
+              color="primary"
+            >
               <v-list-item-icon v-if="surface.feature === 'Fault'">
                 <v-icon class="float-left" v-text="`$fault`" />
               </v-list-item-icon>
@@ -239,7 +461,11 @@
                 <v-list-item-title v-text="surface.name" />
               </v-list-item-content>
               <v-list-item-icon>
-                <v-icon class="float-right" x-small v-text="surface.stackname" />
+                <v-icon
+                  class="float-right"
+                  x-small
+                  v-text="surface.stackname"
+                />
               </v-list-item-icon>
             </v-list-item>
           </v-list>
@@ -247,65 +473,136 @@
         </v-card-text>
         <v-card-actions v-show="activeStackId" class="pa-0 pb-3">
           <v-row dense v-show="!activeSurfaceId" class="mt-3 mx-1">
-            <v-text-field class="mx-1" dense v-model="surfaceNew.name" label="Name" hide-details />
-            <v-btn class="float-right" dense icon small color="success"
-              @click="surfaceNew.stackid = activeStackId; trigger('ss_new', ['Surface', surfaceNew]);">
+            <v-text-field
+              class="mx-1"
+              dense
+              v-model="surfaceNew.name"
+              label="Name"
+              hide-details
+            />
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="surfaceNew.stackid = activeStackId; trigger('ss_new', ['Surface', surfaceNew]);"
+            >
               <v-icon v-text="`$add`" />
             </v-btn>
           </v-row>
           <v-row dense v-show="activeSurfaceId" class="mt-3 mx-1">
-            <v-btn dense icon small color="grey darken-3" @click="trigger('ss_move', ['Surface', 'up'])"
-              :disabled="!activeSurfaceActions.up">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['Surface', 'up'])"
+              :disabled="!activeSurfaceActions.up"
+            >
               <v-icon v-text="`$up`" />
             </v-btn>
-            <v-btn dense icon small color="grey darken-3" @click="trigger('ss_move', ['Surface', 'down'])"
-              :disabled="!activeSurfaceActions.down">
+            <v-btn
+              dense
+              icon
+              small
+              color="grey darken-3"
+              @click="trigger('ss_move', ['Surface', 'down'])"
+              :disabled="!activeSurfaceActions.down"
+            >
               <v-icon v-text="`$down`" />
             </v-btn>
             <v-spacer />
-            <v-btn dense icon small color="error" @click="trigger('ss_remove', ['Surface', activeSurfaceId])"
-              :disabled="!activeSurfaceActions.remove">
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['Surface', activeSurfaceId])"
+              :disabled="!activeSurfaceActions.remove"
+            >
               <v-icon v-text="`$delete`" />
             </v-btn>
-            <v-btn class="float-right" dense icon small color="success" @click="activeSurfaceId = null"
-              :disabled="!activeSurfaceActions.add">
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activeSurfaceId = null"
+              :disabled="!activeSurfaceActions.add"
+            >
               <v-icon v-text="`$add`" />
             </v-btn>
           </v-row>
         </v-card-actions>
       </v-card>
       <!-- Points -->
-      <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'subsurface'">
-        <v-card-title class="grey lighten-1 py-0 grey--text text--darken-3" style="user-select: none; cursor: pointer">
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
           <v-icon class="mr-3" color="grey darken-3" v-text="`$points`" />
           Points
           <v-spacer />
-          <v-btn @click="importType='points.csv';document.getElementById('csvPointsFile').click();" dense icon tile
-            small>
+          <v-btn
+            @click="importType='points.csv';document.getElementById('csvPointsFile').click();"
+            dense
+            icon
+            tile
+            small
+          >
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input id="csvPointsFile" type="file" style="display: none" @change="importFile=$event.target.files[0]" />
+            <input
+              id="csvPointsFile"
+              type="file"
+              style="display: none"
+              @change="importFile=$event.target.files[0]"
+            />
           </v-btn>
         </v-card-title>
-        <v-card-text v-show="activeStackId && activeSurfaceId" class="pb-0 mb-n2 px-0">
+        <v-card-text
+          v-show="activeStackId && activeSurfaceId"
+          class="pb-0 mb-n2 px-0"
+        >
           <v-list dense>
             <v-subheader class="d-flex justify-center">X, Y, Z</v-subheader>
-            <v-list-item v-for="(point, index) in points" :key="index" :value="point.id"
+            <v-list-item
+              v-for="(point, index) in points"
+              :key="index"
+              :value="point.id"
               :class="{ 'v-item--active v-list-item--active': point.id === activePointId }"
-              @click="trigger('ss_select',['Point', point.id])" color="primary">
+              @click="trigger('ss_select',['Point', point.id])"
+              color="primary"
+            >
               <v-list-item-icon class="mr-0 ml-0">
                 <v-icon class="float-left" v-text="`$point`" x-small />
               </v-list-item-icon>
-              <v-list-item-content class="d-flex justify-center text-caption" x-small>
+              <v-list-item-content
+                class="d-flex justify-center text-caption"
+                x-small
+              >
                 {{point.x}}, {{point.y}}, {{point.z}}
               </v-list-item-content>
               <v-list-item-icon class="mr-0 ml-0">
-                <v-icon class="float-right" x-small v-text="point.surfacename" />
+                <v-icon
+                  class="float-right"
+                  x-small
+                  v-text="point.surfacename"
+                />
               </v-list-item-icon>
             </v-list-item>
           </v-list>
           <v-divider class="mb-2" />
         </v-card-text>
-        <v-card-actions v-show="activeStackId && activeSurfaceId" class="pa-0 pb-3">
+        <v-card-actions
+          v-show="activeStackId && activeSurfaceId"
+          class="pa-0 pb-3"
+        >
           <v-row dense v-show="!activePointId" class="mt-3 mx-1">
             <v-col cols="12" sm="3">
               <v-text-field dense label="X" v-model="pointNew.x" />
@@ -317,49 +614,96 @@
               <v-text-field dense label="Z" v-model="pointNew.z" />
             </v-col>
             <v-col cols="12" sm="3">
-              <v-btn class="float-right" dense icon small color="success"
-                @click="pointNew.surfaceid = activeSurfaceId; trigger('ss_new', ['Point', pointNew]);">
+              <v-btn
+                class="float-right"
+                dense
+                icon
+                small
+                color="success"
+                @click="pointNew.surfaceid = activeSurfaceId; trigger('ss_new', ['Point', pointNew]);"
+              >
                 <v-icon v-text="`$add`" />
               </v-btn>
             </v-col>
           </v-row>
           <v-row dense v-show="activePointId" class="mt-3 mx-1">
             <v-spacer />
-            <v-btn dense icon small color="error" @click="trigger('ss_remove', ['Point', activePointId])"
-              :disabled="!activePointActions.remove">
+            <v-btn
+              dense
+              icon
+              small
+              color="error"
+              @click="trigger('ss_remove', ['Point', activePointId])"
+              :disabled="!activePointActions.remove"
+            >
               <v-icon v-text="`$delete`" />
             </v-btn>
-            <v-btn class="float-right" dense icon small color="success" @click="activePointId = null"
-              :disabled="!activePointActions.add">
+            <v-btn
+              class="float-right"
+              dense
+              icon
+              small
+              color="success"
+              @click="activePointId = null"
+              :disabled="!activePointActions.add"
+            >
               <v-icon v-text="`$add`" />
             </v-btn>
           </v-row>
         </v-card-actions>
       </v-card>
       <!-- Orientations -->
-      <v-card class="ma-4 rounded elevation-8" v-show="activeStep === 'subsurface'">
-        <v-card-title class="grey lighten-1 py-0 grey--text text--darken-3" style="user-select: none; cursor: pointer">
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'subsurface'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
           <v-icon class="mr-3" color="grey darken-3" v-text="`$orientations`" />
           Orientations
           <v-spacer />
-          <v-btn @click="importType='orientations.csv';document.getElementById('csvOrientationsFile').click();" dense
-            icon tile small>
+          <v-btn
+            @click="importType='orientations.csv';document.getElementById('csvOrientationsFile').click();"
+            dense
+            icon
+            tile
+            small
+          >
             <v-icon color="grey darken-3" v-text="`$load`" />
-            <input id="csvOrientationsFile" type="file" style="display: none"
-              @change="importFile=$event.target.files[0]" />
+            <input
+              id="csvOrientationsFile"
+              type="file"
+              style="display: none"
+              @change="importFile=$event.target.files[0]"
+            />
           </v-btn>
         </v-card-title>
-        <v-card-text v-show="activeStackId && activeSurfaceId" class="pb-0 mb-n2 px-0">
+        <v-card-text
+          v-show="activeStackId && activeSurfaceId"
+          class="pb-0 mb-n2 px-0"
+        >
           <v-list dense>
-            <v-subheader class="d-flex justify-center">X, Y, Z - GZ, GY, GZ</v-subheader>
-            <v-list-item v-for="(orientation, index) in orientations" :key="index" :value="orientation.id"
+            <v-subheader class="d-flex justify-center"
+              >X, Y, Z - GZ, GY, GZ</v-subheader
+            >
+            <v-list-item
+              v-for="(orientation, index) in orientations"
+              :key="index"
+              :value="orientation.id"
               :class="{ 'v-item--active v-list-item--active': orientation.id === activeOrientationId }"
-              @click="trigger('ss_select',['Orientation', orientation.id])" color="primary">
+              @click="trigger('ss_select',['Orientation', orientation.id])"
+              color="primary"
+            >
               <v-list-item-icon class="mr-0 ml-0">
                 <v-icon class="float-left" v-text="`$point`" x-small />
               </v-list-item-icon>
-              <v-list-item-content class="d-flex justify-center text-caption" x-small>
-                {{orientation.x}},{{orientation.y}},{{orientation.z}} - 
+              <v-list-item-content
+                class="d-flex justify-center text-caption"
+                x-small
+              >
+                {{orientation.x}},{{orientation.y}},{{orientation.z}} -
                 {{Number.parseFloat(orientation.gx).toFixed(1)}},{{Number.parseFloat(orientation.gy).toFixed(1)}},{{Number.parseFloat(orientation.gz).toFixed(1)}}
               </v-list-item-content>
               <v-list-item-icon class="mr-0 ml-0">
@@ -369,95 +713,412 @@
           </v-list>
           <v-divider class="mb-2" />
         </v-card-text>
-        <v-card-actions v-show="activeStackId && activeSurfaceId" class="pa-0 pb-3">
+        <v-card-actions
+          v-show="activeStackId && activeSurfaceId"
+          class="pa-0 pb-3"
+        >
           <v-col cols="12" dense class="pa-0 mt-0">
-          <v-row dense v-show="!activeOrientationId" class="mt-3 mx-1">
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="X" v-model="orientationNew.x" />
-            </v-col>
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="Y" v-model="orientationNew.y" />
-            </v-col>
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="Z" v-model="orientationNew.z" />
-            </v-col>
+            <v-row dense v-show="!activeOrientationId" class="mt-3 mx-1">
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="X" v-model="orientationNew.x" />
+              </v-col>
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="Y" v-model="orientationNew.y" />
+              </v-col>
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="Z" v-model="orientationNew.z" />
+              </v-col>
             </v-row>
             <v-row dense v-show="!activeOrientationId" class="mt-3 mx-1">
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="GX" v-model="orientationNew.gx" />
-            </v-col>
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="GY" v-model="orientationNew.gy" />
-            </v-col>
-            <v-col cols="12" sm="3">
-              <v-text-field dense label="GZ" v-model="orientationNew.gz" />
-            </v-col>
-            <v-col cols="12" sm="3">
-              <v-btn class="float-right" dense icon small color="success"
-                @click="orientationNew.surfaceid = activeSurfaceId; trigger('ss_new', ['Orientation', orientationNew]);">
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="GX" v-model="orientationNew.gx" />
+              </v-col>
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="GY" v-model="orientationNew.gy" />
+              </v-col>
+              <v-col cols="12" sm="3">
+                <v-text-field dense label="GZ" v-model="orientationNew.gz" />
+              </v-col>
+              <v-col cols="12" sm="3">
+                <v-btn
+                  class="float-right"
+                  dense
+                  icon
+                  small
+                  color="success"
+                  @click="orientationNew.surfaceid = activeSurfaceId; trigger('ss_new', ['Orientation', orientationNew]);"
+                >
+                  <v-icon v-text="`$add`" />
+                </v-btn>
+              </v-col>
+            </v-row>
+            <v-row dense v-show="activeOrientationId" class="mt-3 mx-1">
+              <v-spacer />
+              <v-btn
+                dense
+                icon
+                small
+                color="error"
+                @click="trigger('ss_remove', ['Orientation', activeOrientationId])"
+                :disabled="!activeOrientationActions.remove"
+              >
+                <v-icon v-text="`$delete`" />
+              </v-btn>
+              <v-btn
+                class="float-right"
+                dense
+                icon
+                small
+                color="success"
+                @click="activeOrientationId = null"
+                :disabled="!activeOrientationActions.add"
+              >
                 <v-icon v-text="`$add`" />
               </v-btn>
+            </v-row>
+          </v-col>
+        </v-card-actions>
+      </v-card>
+      <!-- topography -->
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'topography'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$topography`" />
+          Topography
+          <v-spacer />
+          <v-btn dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$save`" />
+          </v-btn>
+          <v-btn dense icon tile small>
+            <v-icon color="grey darken-3" v-text="`$load`" />
+            <input
+              type="file"
+              ref="fileSelector"
+              v-show="false"
+              name="csvToUpload"
+            />
+          </v-btn>
+        </v-card-title>
+          <v-card flat class="pa-0 mb-n2">
+            <v-col dense cols="12" class="pa-0">
+              <v-row dense no-gutters>
+                <v-col md="6" no-gutters>
+                  <v-select
+                    dense
+                    label="Category"
+                  />
+                </v-col>
+                <v-spacer />
+                <v-checkbox
+                  dense
+                  hide-details
+                  class="ma-0 pa-0 float-right"
+                  color="grey darken-3"
+                  off-icon="mdi-lightbulb-off-outline"
+                  on-icon="mdi-lightbulb-outline"
+                  disabled
+                ></v-checkbox>
+              </v-row>
             </v-col>
-          </v-row>
-          <v-row dense v-show="activeOrientationId" class="mt-3 mx-1">
-            <v-spacer />
-            <v-btn dense icon small color="error" @click="trigger('ss_remove', ['Orientation', activeOrientationId])"
-              :disabled="!activeOrientationActions.remove">
-              <v-icon v-text="`$delete`" />
-            </v-btn>
-            <v-btn class="float-right" dense icon small color="success" @click="activeOrientationId = null"
-              :disabled="!activeOrientationActions.add">
-              <v-icon v-text="`$add`" />
-            </v-btn>
-          </v-row>
-        </v-col>
+          </v-card>
+          <v-card flat class="pb-0 mb-n2"> Random
+            <v-col dense cols="12" class="pt-0">
+              <v-row
+                class="pl-2 pt-3 ml-n5 rounded"
+                style="border-left: solid 2px #546e7a"
+              >
+                <v-tooltip right>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-row dense v-bind="attrs" v-on="on">
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="Seed"
+                        />
+                      </v-col>
+                    </v-row>
+                  </template>
+                  <span>Random Number Seed</span>
+                </v-tooltip>
+              </v-row>
+              <v-row
+                class="pl-2 pt-3 ml-n5 rounded"
+                style="border-left: solid 2px #546e7a"
+              >
+                <v-tooltip right>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-row dense v-bind="attrs" v-on="on">
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="FD"
+                        />
+                      </v-col>
+                    </v-row>
+                  </template>
+                  <span>Fractal Dimension</span>
+                </v-tooltip>
+              </v-row>
+              <v-row
+                class="pl-2 pt-3 ml-n5 rounded"
+                style="border-left: solid 2px #546e7a"
+              >
+                <v-tooltip right>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-row dense v-bind="attrs" v-on="on">
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="dZ Min"
+                        />
+                      </v-col>
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="dZ Max"
+                        />
+                      </v-col>
+                    </v-row>
+                  </template>
+                  <span>Depth</span>
+                </v-tooltip>
+              </v-row>
+              <v-row
+                class="mt-4 pl-2 pt-2 ml-n5 rounded"
+                style="border-left: solid 2px #546e7a"
+              >
+                <v-tooltip right>
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-row dense v-bind="attrs" v-on="on">
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="X Resolution"
+                        />
+                      </v-col>
+                      <v-col md="6">
+                        <v-text-field
+                          dense
+                          type="number"
+                          label="Y Resolution"
+                        />
+                      </v-col>
+                    </v-row>
+                  </template>
+                  <span>Resolution</span>
+                </v-tooltip>
+              </v-row>
+            </v-col>
+          </v-card>
+          <v-card flat > GDAL
+            <v-col dense cols="12" class="pa-0 pt-3">
+              <v-row dense>
+                <v-col class="pa-0" no-gutters>
+                  <v-file-input
+                    dense
+                    label="GDAL File"
+                    <!-- v-model="selectedfile" -->
+                  />
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-card>
+          <v-card flat >Saved
+            <v-col dense cols="12" class="pa-0 pt-3">
+              <v-row dense>
+                <v-col class="pa-0" no-gutters>
+                  <v-file-input
+                    dense
+                    label="Saved File"
+                  />
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-card>
+          <v-card flat>
+            <v-col dense cols="12" class="pa-0">
+              <v-row dense>
+                <v-col offset-md="8">
+                  <v-btn
+                    dense
+                    icon
+                    tile
+                    small
+                    color="success"
+                    class="float-right"
+                  >
+                    <v-icon v-text="`$apply`" />
+                  </v-btn>
+                  <v-btn
+                    dense
+                    icon
+                    tile
+                    small
+                    color="error"
+                    class="float-right"
+                  >
+                    <v-icon v-text="`$cancel`" />
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-col>
+          </v-card>
+      </v-card>
+      <!-- visualization -->
+      <v-card
+        class="ma-4 rounded elevation-8"
+        v-show="activeStep === 'visualization'"
+      >
+        <v-card-title
+          class="grey lighten-1 py-0 grey--text text--darken-3"
+          style="user-select: none; cursor: pointer"
+        >
+          <v-icon class="mr-3" color="grey darken-3" v-text="`$cube`" />
+          Visualization
+          <v-spacer />
+        </v-card-title>
+        <v-card-text class="pb-0 mb-n2 px-0">
+          <v-treeview
+            dense
+            v-model="selection"
+            selectable
+            selected-color="red"
+            item-disabled="locked"
+            :items="allsurfaces"
+          >
+            <template v-slot:prepend="{ item }">
+              <v-icon
+                v-if="item.children"
+                :color="item.color"
+                v-text="`$square`"
+              >
+              </v-icon>
+            </template>
+          </v-treeview>
+          <v-divider class="mb-2" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
         </v-card-actions>
       </v-card>
     </div>
     <!-- quad view / single -->
     <v-container fluid fill-height class="pa-0" style="position: relative">
-      <v-row no-gutters class="ma-0" :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }">
+      <v-row
+        no-gutters
+        class="ma-0"
+        :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }"
+      >
         <v-col v-show="viewLayout !== 'singleView'" style="position: relative">
-          <v-slider label="X" style="
+          <v-slider
+            label="X"
+            style="
               position: absolute;
               z-index: 1;
               left: 10px;
               right: 10px;
               bottom: 0;
-            " dense hide-details color="red" track-color="red" v-bind="sliderX" v-model="vtkCutOrigin[0]"
-            @input="dirty('vtkCutOrigin')" thumb-label thumb-size="24" thumb-color="blue-grey" />
-          <vtk-sync-view ref="vtkViewX" :wsClient="wsClient" :viewState="vtkViewX" :interactorSettings="interaction2D"
-            :camera="{ parallelProjection: true }" />
+            "
+            dense
+            hide-details
+            color="red"
+            track-color="red"
+            v-bind="sliderX"
+            v-model="vtkCutOrigin[0]"
+            @input="dirty('vtkCutOrigin')"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewX"
+            :wsClient="wsClient"
+            :viewState="vtkViewX"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
         </v-col>
         <v-col>
-          <vtk-sync-view ref="vtkView3D" :wsClient="wsClient" :viewState="vtkView3D" />
+          <vtk-sync-view
+            ref="vtkView3D"
+            :wsClient="wsClient"
+            :viewState="vtkView3D"
+          />
         </v-col>
       </v-row>
-      <v-row no-gutters class="ma-0" :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }"
-        v-show="viewLayout !== 'singleView'" style="border-top: 1px solid #333">
+      <v-row
+        no-gutters
+        class="ma-0"
+        :style="{ height: viewLayout !== 'singleView' ? '50%' : '100%' }"
+        v-show="viewLayout !== 'singleView'"
+        style="border-top: 1px solid #333"
+      >
         <v-col style="position: relative">
-          <v-slider label="Y" style="
+          <v-slider
+            label="Y"
+            style="
               position: absolute;
               z-index: 1;
               left: 10px;
               right: 10px;
               bottom: 0;
-            " dense hide-details color="yellow" track-color="yellow" v-bind="sliderY" v-model="vtkCutOrigin[1]"
-            @input="dirty('vtkCutOrigin')" thumb-label thumb-size="24" thumb-color="blue-grey" />
-          <vtk-sync-view ref="vtkViewY" :wsClient="wsClient" :viewState="vtkViewY" :interactorSettings="interaction2D"
-            :camera="{ parallelProjection: true }" />
+            "
+            dense
+            hide-details
+            color="yellow"
+            track-color="yellow"
+            v-bind="sliderY"
+            v-model="vtkCutOrigin[1]"
+            @input="dirty('vtkCutOrigin')"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewY"
+            :wsClient="wsClient"
+            :viewState="vtkViewY"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
         </v-col>
         <v-col style="position: relative">
-          <v-slider label="Z" style="
+          <v-slider
+            label="Z"
+            style="
               position: absolute;
               z-index: 1;
               left: 10px;
               right: 10px;
               bottom: 0;
-            " dense hide-details color="green" track-color="green" v-bind="sliderZ" v-model="vtkCutOrigin[2]"
-            thumb-label thumb-size="24" thumb-color="blue-grey" />
-          <vtk-sync-view ref="vtkViewZ" :wsClient="wsClient" :viewState="vtkViewZ" :interactorSettings="interaction2D"
-            :camera="{ parallelProjection: true }" />
+            "
+            dense
+            hide-details
+            color="green"
+            track-color="green"
+            v-bind="sliderZ"
+            v-model="vtkCutOrigin[2]"
+            thumb-label
+            thumb-size="24"
+            thumb-color="blue-grey"
+          />
+          <vtk-sync-view
+            ref="vtkViewZ"
+            :wsClient="wsClient"
+            :viewState="vtkViewZ"
+            :interactorSettings="interaction2D"
+            :camera="{ parallelProjection: true }"
+          />
         </v-col>
       </v-row>
     </v-container>

@@ -6,15 +6,21 @@ class WorkflowManager:
             {"icon": "mdi-grid", "disabled": False, "value": "grid", "label": "Grid"},
             {
                 "icon": "mdi-chart-timeline-variant-shimmer",
-                "disabled": True,
+                "disabled": False,
                 "value": "subsurface",
                 "label": "Sub-surface",
             },
             {
                 "icon": "mdi-image-filter-hdr",
-                "disabled": True,
+                "disabled": False,
                 "value": "topography",
                 "label": "Topography",
+            },
+             {
+                "icon": "mdi-cube-scan",
+                "disabled": False,
+                "value": "visualization",
+                "label": "Visualization",
             },
         ]
         app.state.update(self.state)

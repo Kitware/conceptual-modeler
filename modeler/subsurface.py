@@ -69,6 +69,58 @@ class Grid:
         self.extent = content.get("extent", self.extent)
         self.resolution = content.get("resolution", self.resolution)
 
+class Topography:
+    def __init__(self):
+        self.on = False, 
+        self.category = 'random', 
+        self.seed = 1515,
+        self.fd = 2.0, 
+        self.dzmin = 80.0, 
+        self.dzmax = 100.0,
+        self.rx = 10,
+        self.ry = 10,
+        self.filename = ''
+
+    @property
+    def html(self):
+        return {
+            'on': self.on, 
+            'category': self.category, 
+            'seed': self.seed,
+            'fd': self.fd, 
+            'dzmin': self.dzmin, 
+            'dzmax': self.dzmax,
+            'rx': self.rx,
+            'ry': self.ry,
+            'filename': self.filename,
+        }
+
+    def export_state(self, depth=-1):
+        return {
+            'on': self.on, 
+            'category': self.category, 
+            'seed': self.seed,
+            'fd': self.fd, 
+            'dzmin': self.dzmin, 
+            'dzmax': self.dzmax,
+            'rx': self.rx,
+            'ry': self.ry,
+            'filename': self.filename,
+        }
+
+    def import_state(self, content):
+        if not content:
+            return
+
+        self.on = content.get("on", self.on) 
+        self.category = content.get("category", self.category) 
+        self.seed = content.get("seed", self.seed)
+        self.fd = content.get("fd", self.fd) 
+        self.dzmin = content.get("dzmin", self.dzmin)
+        self.dzmax = content.get("dzmax", self.dzmax)
+        self.rx = content.get("rx", self.rx)
+        self.ry = content.get("ry", self.ry)
+        self.filename = content.get("filename", self.filename)
 
 class AbstractSortedList:
     def __init__(self, klass, parent=None):
@@ -217,10 +269,10 @@ class Orientation:
     def __init__(self, x, y, z, gx, gy, gz, parent=None, **kwargs):
         self.id = next(Orientation.id_generator)
         self.idx = next(Orientation.index_generator)
-        self.x = x
-        self.y = y
-        self.z = z
-        self.poleVector = [gx, gy, gz]
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+        self.poleVector = [float(gx), float(gy), float(gz)]
         self.surface = parent
 
     @property
@@ -244,6 +296,9 @@ class Orientation:
             "z": self.z,
             "poleVector": self.poleVector,
         }
+
+    def get(self):
+        return [self.x, self.y, self.z, self.poleVector[0], self.poleVector[1], self.poleVector[2]]
 
     def out(self):
         print(self.id, self.x, self.y, self.z, self.poleVector)
@@ -272,6 +327,12 @@ class Orientations(AbstractSortedList):
 
         return allowed
 
+    def list(self):
+        items = []
+        for orientation in self._data.values():
+            items.append(orientation.get())
+        return items
+
     def remove(self, id):
         if not self.allowed_actions(id).get("remove", False):
             return
@@ -293,9 +354,9 @@ class Point:
     def __init__(self, x, y, z, parent=None, **kwargs):
         self.id = next(Point.id_generator)
         self.idx = next(Point.index_generator)
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
         self.surface = parent
 
     @property
@@ -315,6 +376,9 @@ class Point:
             "y": self.y,
             "z": self.z,
         }
+    
+    def get(self):
+        return [self.x, self.y, self.z]
 
     def out(self):
         print(self.id, self.x, self.y, self.z)
@@ -341,6 +405,12 @@ class Points(AbstractSortedList):
         allowed["up"] = 0
 
         return allowed
+    
+    def list(self):
+        items = []
+        for point in self._data.values():
+            items.append(point.get())
+        return items
 
     def remove(self, id):
         if not self.allowed_actions(id).get("remove", False):
@@ -362,17 +432,27 @@ class Surface:
     def __init__(self, name, parent=None, **kwargs):
         self.id = next(Surface.id_generator)
         self.name = name
+        self.color = "#607d8b"
         self.points = Points(self)
         self.orientations = Orientations(self)
         self.stack = parent
 
     @property
     def html(self):
+        surfaceid = self.id+"_surface"
+        pointsid = self.id+"_points"
+        orientationsid = self.id+"_orientations"
         return {
             "id": self.id,
             "name": self.name,
+            "color": self.color,
             "feature": self.stack.feature.value,
             "stackname": self.stack.name,
+            "children": [
+                { "id": surfaceid, "name": "surface" },
+                { "id": pointsid, "name": "points" },
+                { "id": orientationsid, "name": "orientations" },
+            ],
         }
 
     def export_state(self, depth=-1):
@@ -448,7 +528,7 @@ class Surfaces(AbstractSortedList):
         self._data[item.id] = item
         self._append_new_id(item.id)
         return item
-
+    
     def find_by_name(self, name):
         for surface in self._data.values():
             if surface.name == name:
@@ -658,6 +738,11 @@ class Stacks(AbstractSortedList):
                 return stack.name
         return
 
+    def update_surface_color_by_id(self, id, color):
+        for stack in self._data.values():
+            surface = stack.surfaces.find_by_id(id)
+            if surface:
+                surface.color = color
 
 # -----------------------------------------------------------------------------
 # State Manager
@@ -668,6 +753,7 @@ class StateManager:
     def __init__(self):
         self.grid = Grid()
         self.stacks = Stacks()
+        self.topography = Topography()
 
     def __getitem__(self, name):
         if name in self.__dict__:
@@ -680,6 +766,7 @@ class StateManager:
         active_stack = self.stacks.stack
         active_stack_id = None
         stack_actions = {}
+        allsurfaces_html = self.allsurfaces_html()
         surfaces = None
         surfaces_html = None
         active_surface = None
@@ -693,6 +780,7 @@ class StateManager:
         orientations_html = None
         active_orientation_id = None
         orientation_actions = {}
+        topography = self.topography.html
 
         if active_stack:
             active_stack_id = active_stack.id
@@ -721,6 +809,7 @@ class StateManager:
             "stacks": stacks_html,
             "activeStackId": active_stack_id,
             "activeStackActions": stack_actions,
+            "allsurfaces": allsurfaces_html,
             "surfaces": surfaces_html,
             "activeSurfaceId": active_surface_id,
             "activeSurfaceActions": surface_actions,
@@ -732,6 +821,7 @@ class StateManager:
             "activeOrientationId": active_orientation_id,
             "subsurfaceImportTS": 0,
             "subsurfaceState": None,
+            "topography": topography,
         }
 
     def find_stack_by_name(self, name):
@@ -757,6 +847,30 @@ class StateManager:
 
     def is_a_fault(self):
         return self.stacks.is_a_fault()
+
+    def update_surface_color_by_id(self, id, color):
+        self.stacks.update_surface_color_by_id(id, color)
+
+    def get_ordered_surfaces(self):
+        ordered_surfaces = []
+        mapstacks = self.map_stack_to_surfaces()
+        for stack in mapstacks.keys():
+            ordered_surfaces.extend(mapstacks[stack])
+        ordered_surfaces.reverse()
+        return ordered_surfaces
+
+    def allsurfaces_html(self):
+        results = []
+        results.append({"id": "grid", "name": "grid", "color": "#bdbdbd", "children": [],})
+        ordered_surfaces = self.get_ordered_surfaces()
+        for surfaceid in ordered_surfaces:
+            surface = self.find_surface_by_id(surfaceid)
+            item = surface.html
+            if surfaceid == "Surface_1":
+                item["locked"] = True
+                item["children"] = []
+            results.append(item)
+        return results
 
     def move(self, type, direction):
         active_stack = self.stacks.stack
@@ -860,6 +974,7 @@ class StateManager:
     def import_state(self, parsed_json_structure):
         self.grid.import_state(parsed_json_structure.get("grid", None))
         self.stacks.import_state(parsed_json_structure.get("stacks", None))
+        self.topography.import_state(parsed_json_structure.get("topography", None))
 
     def export_state(self, depth=-1):
         return {
@@ -868,6 +983,7 @@ class StateManager:
             "type": "conceptual-modeler-full",
             "grid": self.grid.export_state(depth),
             "stacks": self.stacks.export_state(depth),
+            "topography": self.topography.export_state(depth),
         }
 
 
@@ -925,7 +1041,7 @@ class SubSurfaceModeler:
         """type@app: Stack, Surface, Point, Orientation"""
         dirty_list = []
         stack_state_list = ["stacks", "activeStackId", "activeStackActions"]
-        surface_state_list = ["surfaces", "activeSurfaceId", "activeSurfaceActions"]
+        surface_state_list = ["allsurfaces", "surfaces", "activeSurfaceId", "activeSurfaceActions"]
         point_state_list = ["points", "activePointId", "activePointActions"]
         orientation_state_list = [
             "orientations",
@@ -961,12 +1077,50 @@ class SubSurfaceModeler:
     def update_grid(self, extent, resolution):
         self._state_handler.grid.extent = extent
         self._state_handler.grid.resolution = resolution
+        self._state_handler.topography.dzmin = extent[5] - 0.2 * (extent[5] - extent[4])
+        self._state_handler.topography.dzmax = extent[5]
+        self._state_handler.topography.rx = resolution[0]
+        self._state_handler.topography.ry = resolution[1]
+        if self._state_handler.topography.on:
+            self.update_topography(self._state_handler.topography.on, self._state_handler.topography.category, self._state_handler.topography.seed, self._state_handler.topography.fd, self._state_handler.topography.dzmin, self._state_handler.topography.dzmax, self._state_handler.topography.rx, self._state_handler.topography.ry, self._state_handler.topography.filename)
         gp.init_data(
             self._geo_model,
             extent=extent,
             resolution=resolution,
         )
         self.dirty("grid")
+
+    def update_topography(self, on, category, seed, fd, dzmin, dzmax, rx, ry, filename): 
+        self._state_handler.topography.on = on 
+        self._state_handler.topography.category = category 
+        self._state_handler.topography.seed = seed
+        self._state_handler.topography.fd = fd
+        self._state_handler.topography.dzmin = dzmin
+        self._state_handler.topography.dzmax = dzmax
+        self._state_handler.topography.rx = rx
+        self._state_handler.topography.ry = ry
+        self._state_handler.topography.filename = filename
+        if self._state_handler.topography.category == 'gdal':
+            self._geo_model.set_topography(
+                source='gdal', 
+                filepath=self._state_handler.topography.filename
+                )
+        elif self._state_handler.topography.category == 'saved':
+            self._geo_model.set_topography(
+                source='saved', 
+                filepath=self._state_handler.topography.filename
+                )
+        elif self._state_handler.topography.category == 'random':
+            np.random.seed(self._state_handler.topography.seed)
+            self._geo_model.set_topography(
+                source='random', 
+                fd=self._state_handler.topography.fd, 
+                d_z=np.array([self._state_handler.topography.dzmin, self._state_handler.topography.dzmax]),
+                resolution=np.array([self._state_handler.topography.rx, self._state_handler.topography.ry])
+                )
+        self._state_handler.topography.on = True
+        self.dirty("topography")
+
 
     def add(self, type, data):
         """type@html: Stack, Surface, Point, Orientation"""
@@ -1033,16 +1187,33 @@ class SubSurfaceModeler:
     def add_surface(self, surface):
         self._geo_model.add_surfaces(surface.id)
         self.reordering()
+        self.update_surface_colors()
         self.dirty_state("Surface")
 
     def remove_surface(self, id):
         self._geo_model.delete_surfaces(id)
         self.reordering()
+        self.update_surface_colors()
         self.dirty_state("Surface")
 
     def move_surface(self):
         self.reordering()
+        self.update_surface_colors()
         self.dirty_state("Surface")
+
+    def update_surface_colors(self):
+        colors = self._geo_model.surfaces.colors.colordict
+        ordered_surfaces = self.get_ordered_surfaces()
+        for surface in ordered_surfaces:
+            self._state_handler.update_surface_color_by_id(surface, colors[surface])
+
+    def get_ordered_surfaces(self):
+        ordered_surfaces = []
+        mapstacks = self._state_handler.map_stack_to_surfaces()
+        for stack in mapstacks.keys():
+            ordered_surfaces.extend(mapstacks[stack])
+        ordered_surfaces.reverse()
+        return ordered_surfaces
 
     def add_point(self, point):
         self._geo_model.add_surface_points(
@@ -1099,11 +1270,11 @@ class SubSurfaceModeler:
         nx, ny, nz = resolution
         size = nx * ny * nz
         array = self._geo_model.solutions.lith_block
-        print("lito size", (nx, ny, nz), size, array.size)
+        print("litho size", (nx, ny, nz), size, array.size)
         if size != array.size:
             return None
 
-        return array.view().reshape(nx, ny, nz)
+        return array
 
     @property
     def blanking(self):

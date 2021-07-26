@@ -28,6 +28,9 @@ viz = VtkViewer(app, modeler)
 # Callbacks
 # -----------------------------------------------------------------------------
 
+@app.change("selection")
+def update_visibility():
+    viz.update_visibility(app.get("selection"))
 
 @app.change("vtkCutOrigin")
 def update_slices():
@@ -70,6 +73,16 @@ def update_io():
 # Method calls
 # -----------------------------------------------------------------------------
 
+
+@app.trigger("compute")
+def compute():
+    print("trigger::compute")
+    modeler.compute_geo_model()
+    viz.compute()
+
+@app.trigger("resetCamera")
+def resetCamera():
+    viz.resetCamera()
 
 @app.trigger("grid")
 def update_grid(action, grid):

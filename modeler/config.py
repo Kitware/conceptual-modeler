@@ -27,6 +27,7 @@ shared_state = {
     "fileName": "",
     "exportShow": False,
     "importShow": False,
+    "computeShow": True,
     "importFile": None,
     "importType": None,
     "importTypes": [
@@ -81,6 +82,8 @@ vuetify = {
             "orientation": "mdi-compass",
             "orientations": "mdi-math-compass",
             "compute": "mdi-desktop-classic",
+            "square": "mdi-square",
+            "cube": "mdi-cube-scan",
             # app layout
             "singleView": "mdi-border-all-variant",
             "multiView": "mdi-border-all",
