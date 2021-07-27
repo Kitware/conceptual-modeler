@@ -71,20 +71,22 @@ class Grid:
 
 class Topography:
     def __init__(self):
-        self.on = False, 
-        self.category = 'random', 
-        self.seed = 1515,
-        self.fd = 2.0, 
-        self.dzmin = 80.0, 
-        self.dzmax = 100.0,
-        self.rx = 10,
-        self.ry = 10,
+        self.on = False
+        self.items = ['random', 'gdal', 'saved']
+        self.category = 'random'
+        self.seed = 1515
+        self.fd = 2.0
+        self.dzmin = 80.0
+        self.dzmax = 100.0
+        self.rx = 10
+        self.ry = 10
         self.filename = ''
 
     @property
     def html(self):
         return {
             'on': self.on, 
+            'items': self.items,
             'category': self.category, 
             'seed': self.seed,
             'fd': self.fd, 
@@ -1082,42 +1084,33 @@ class SubSurfaceModeler:
         self._state_handler.topography.rx = resolution[0]
         self._state_handler.topography.ry = resolution[1]
         if self._state_handler.topography.on:
-            self.update_topography(self._state_handler.topography.on, self._state_handler.topography.category, self._state_handler.topography.seed, self._state_handler.topography.fd, self._state_handler.topography.dzmin, self._state_handler.topography.dzmax, self._state_handler.topography.rx, self._state_handler.topography.ry, self._state_handler.topography.filename)
+            self.update_topography(self._state_handler.topography.seed, self._state_handler.topography.fd, self._state_handler.topography.dzmin, self._state_handler.topography.dzmax, self._state_handler.topography.rx, self._state_handler.topography.ry)
         gp.init_data(
             self._geo_model,
             extent=extent,
             resolution=resolution,
         )
-        self.dirty("grid")
+        self.dirty("grid", "topography")
 
-    def update_topography(self, on, category, seed, fd, dzmin, dzmax, rx, ry, filename): 
-        self._state_handler.topography.on = on 
-        self._state_handler.topography.category = category 
+    def update_topography(self, seed, fd, dzmin, dzmax, rx, ry): 
+        print("update_topography ",seed, fd, dzmin, dzmax, rx, ry)
         self._state_handler.topography.seed = seed
         self._state_handler.topography.fd = fd
         self._state_handler.topography.dzmin = dzmin
         self._state_handler.topography.dzmax = dzmax
         self._state_handler.topography.rx = rx
         self._state_handler.topography.ry = ry
-        self._state_handler.topography.filename = filename
-        if self._state_handler.topography.category == 'gdal':
-            self._geo_model.set_topography(
-                source='gdal', 
-                filepath=self._state_handler.topography.filename
-                )
-        elif self._state_handler.topography.category == 'saved':
-            self._geo_model.set_topography(
-                source='saved', 
-                filepath=self._state_handler.topography.filename
-                )
-        elif self._state_handler.topography.category == 'random':
+        if self._state_handler.topography.category == 'random':
+            print("random")
             np.random.seed(self._state_handler.topography.seed)
+            print("set seed")
             self._geo_model.set_topography(
                 source='random', 
                 fd=self._state_handler.topography.fd, 
                 d_z=np.array([self._state_handler.topography.dzmin, self._state_handler.topography.dzmax]),
                 resolution=np.array([self._state_handler.topography.rx, self._state_handler.topography.ry])
                 )
+            print("set topography")
         self._state_handler.topography.on = True
         self.dirty("topography")
 
@@ -1447,9 +1440,11 @@ class SubSurfaceModeler:
                 and "polarity" in row
                 and "formation" in row
             ):
-                diprad = row["dip"] * math.pi / 180.0
-                azimuthrad = row["azimuth"] * math.pi / 180.0
-                polarity = row["polarity"]
+                dip = float(row["dip"])
+                azimuth = float(row["azimuth"])
+                polarity = float(row["polarity"])
+                diprad = dip * math.pi / 180.0
+                azimuthrad = azimuth * math.pi / 180.0
                 gx = math.sin(diprad) * math.sin(azimuthrad) * polarity + 1e-12
                 gy = math.sin(diprad) * math.cos(azimuthrad) * polarity + 1e-12
                 gz = math.cos(diprad) * polarity + 1e-12

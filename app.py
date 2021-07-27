@@ -28,9 +28,9 @@ viz = VtkViewer(app, modeler)
 # Callbacks
 # -----------------------------------------------------------------------------
 
-@app.change("selection")
+@app.change("visibility")
 def update_visibility():
-    viz.update_visibility(app.get("selection"))
+    viz.update_visibility(app.get("visibility"))
 
 @app.change("vtkCutOrigin")
 def update_slices():
@@ -101,6 +101,16 @@ def update_grid(action, grid):
         # reset client values to server state
         modeler.dirty("grid")
 
+
+@app.trigger("ss_topography")
+def ss_topography(topography):
+    seed = int(topography.get("seed"))
+    fd = float(topography.get("fd"))
+    dzmin = float(topography.get("dzmin"))
+    dzmax = float(topography.get("dzmax"))
+    rx = int(topography.get("rx"))
+    ry = int(topography.get("ry"))
+    modeler.update_topography(seed, fd, dzmin, dzmax, rx, ry)
 
 @app.trigger("ss_select")
 def ss_select(type, id):

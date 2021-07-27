@@ -369,7 +369,7 @@ class VtkViewer:
         bounds = self._grid.GetBounds()
         resolutions = self.resolutions
         return {
-            "selection": [],
+            "visibility": [],
             "vtkCutOrigin": tuple(self._slice_planes[0].GetOrigin()),
             "vtkView3D": self._app.scene(self._views["vtkView3D"].view),
             "vtkViewX": self._app.scene(self._views["vtkViewX"].view),
@@ -608,7 +608,7 @@ class VtkViewer:
             view.add_surface(surface, color, vertices, simplices)
             self.set_visibility(name, False)
 
-    def update_visibility(self, visible_items):
+    def update_visibility(self, visibility):
         surfaces = self.get_ordered_surfaces()
         # remove basement from list
         surfaces.remove('Surface_1')
@@ -620,6 +620,6 @@ class VtkViewer:
             self.set_visibility(name, False)
             name = surface+"_orientations"
             self.set_visibility(name, False)
-        for item in visible_items:
+        for item in visibility:
             self.set_visibility(item, True)
         self.update_views()

@@ -804,80 +804,32 @@
             />
           </v-btn>
         </v-card-title>
-          <v-card flat class="pa-0 mb-n2">
-            <v-col dense cols="12" class="pa-0">
-              <v-row dense no-gutters>
-                <v-col md="6" no-gutters>
-                  <v-select
-                    dense
-                    label="Category"
-                  />
-                </v-col>
-                <v-spacer />
-                <v-checkbox
-                  dense
-                  hide-details
-                  class="ma-0 pa-0 float-right"
-                  color="grey darken-3"
-                  off-icon="mdi-lightbulb-off-outline"
-                  on-icon="mdi-lightbulb-outline"
-                  disabled
-                ></v-checkbox>
-              </v-row>
-            </v-col>
-          </v-card>
-          <v-card flat class="pb-0 mb-n2"> Random
-            <v-col dense cols="12" class="pt-0">
-              <v-row
-                class="pl-2 pt-3 ml-n5 rounded"
-                style="border-left: solid 2px #546e7a"
-              >
-                <v-tooltip right>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-row dense v-bind="attrs" v-on="on">
-                      <v-col md="6">
+          <v-card-text class="pb-0 mb-n2 px-0">
+              <v-row class="mt-3 mx-1">
+                      <v-col cols="6">
                         <v-text-field
                           dense
                           type="number"
                           label="Seed"
+                          v-model="topography.seed"
                         />
                       </v-col>
-                    </v-row>
-                  </template>
-                  <span>Random Number Seed</span>
-                </v-tooltip>
-              </v-row>
-              <v-row
-                class="pl-2 pt-3 ml-n5 rounded"
-                style="border-left: solid 2px #546e7a"
-              >
-                <v-tooltip right>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-row dense v-bind="attrs" v-on="on">
                       <v-col md="6">
                         <v-text-field
                           dense
                           type="number"
                           label="FD"
+                          v-model="topography.fd"
                         />
                       </v-col>
-                    </v-row>
-                  </template>
-                  <span>Fractal Dimension</span>
-                </v-tooltip>
               </v-row>
-              <v-row
-                class="pl-2 pt-3 ml-n5 rounded"
-                style="border-left: solid 2px #546e7a"
-              >
-                <v-tooltip right>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-row dense v-bind="attrs" v-on="on">
+              <v-row class="mt-3 mx-1">
                       <v-col md="6">
                         <v-text-field
                           dense
                           type="number"
                           label="dZ Min"
+                          v-model="topography.dzmin"
                         />
                       </v-col>
                       <v-col md="6">
@@ -885,25 +837,17 @@
                           dense
                           type="number"
                           label="dZ Max"
+                          v-model="topography.dzmax"
                         />
                       </v-col>
-                    </v-row>
-                  </template>
-                  <span>Depth</span>
-                </v-tooltip>
               </v-row>
-              <v-row
-                class="mt-4 pl-2 pt-2 ml-n5 rounded"
-                style="border-left: solid 2px #546e7a"
-              >
-                <v-tooltip right>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-row dense v-bind="attrs" v-on="on">
+              <v-row class="mt-3 mx-1">
                       <v-col md="6">
                         <v-text-field
                           dense
                           type="number"
                           label="X Resolution"
+                          v-model="topography.rx"
                         />
                       </v-col>
                       <v-col md="6">
@@ -911,68 +855,38 @@
                           dense
                           type="number"
                           label="Y Resolution"
+                          v-model="topography.ry"
                         />
                       </v-col>
-                    </v-row>
-                  </template>
-                  <span>Resolution</span>
-                </v-tooltip>
+              </v-row>
+          </v-card-text>
+          <v-card-actions class="pa-0 pb-3">
+            <v-col cols="12" dense class="pa-0 mt-0">
+              <v-row dense class="mt-3 mx-1">
+                <v-checkbox 
+                  dense 
+                  hide-details
+                  class="ma-0 pa-0 float-left" 
+                  v-model="topography.on"
+                  color="#ffd600" 
+                  off-icon="mdi-lightbulb-off-outline"
+                  on-icon="mdi-lightbulb-outline" 
+                  disabled>
+                </v-checkbox>
+                <v-spacer />
+                <v-btn
+                  class="float-right"
+                  dense
+                  icon
+                  small
+                  color="success"
+                  @click="trigger('ss_topography',[topography])"
+                >
+                  <v-icon v-text="`$apply`" />
+                </v-btn>
               </v-row>
             </v-col>
-          </v-card>
-          <v-card flat > GDAL
-            <v-col dense cols="12" class="pa-0 pt-3">
-              <v-row dense>
-                <v-col class="pa-0" no-gutters>
-                  <v-file-input
-                    dense
-                    label="GDAL File"
-                    <!-- v-model="selectedfile" -->
-                  />
-                </v-col>
-              </v-row>
-            </v-col>
-          </v-card>
-          <v-card flat >Saved
-            <v-col dense cols="12" class="pa-0 pt-3">
-              <v-row dense>
-                <v-col class="pa-0" no-gutters>
-                  <v-file-input
-                    dense
-                    label="Saved File"
-                  />
-                </v-col>
-              </v-row>
-            </v-col>
-          </v-card>
-          <v-card flat>
-            <v-col dense cols="12" class="pa-0">
-              <v-row dense>
-                <v-col offset-md="8">
-                  <v-btn
-                    dense
-                    icon
-                    tile
-                    small
-                    color="success"
-                    class="float-right"
-                  >
-                    <v-icon v-text="`$apply`" />
-                  </v-btn>
-                  <v-btn
-                    dense
-                    icon
-                    tile
-                    small
-                    color="error"
-                    class="float-right"
-                  >
-                    <v-icon v-text="`$cancel`" />
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-col>
-          </v-card>
+          </v-card-actions>
       </v-card>
       <!-- visualization -->
       <v-card
@@ -990,7 +904,7 @@
         <v-card-text class="pb-0 mb-n2 px-0">
           <v-treeview
             dense
-            v-model="selection"
+            v-model="visibility"
             selectable
             selected-color="red"
             item-disabled="locked"
