@@ -227,7 +227,6 @@ class ViewView:
         return item
 
     def add_surface(self, surface, color, vertices, simplices):
-        print(surface, color)
         surface_points = vtkPoints()
         surface_polydata = vtkPolyData()
         surface_triangles = vtkCellArray()

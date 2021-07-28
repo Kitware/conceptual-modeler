@@ -1025,9 +1025,7 @@ class SubSurfaceModeler:
         app.state.update(self._state_handler.client_state)
 
     def dirty(self, *args):
-        # print('dirty', *args)
         state = self._state_handler.client_state
-        # print('==> ok')
         for name in args:
             if name in state:
                 self._app.set(name, state[name], force=True)
@@ -1093,7 +1091,6 @@ class SubSurfaceModeler:
         self.dirty("grid", "topography")
 
     def update_topography(self, seed, fd, dzmin, dzmax, rx, ry): 
-        print("update_topography ",seed, fd, dzmin, dzmax, rx, ry)
         self._state_handler.topography.seed = seed
         self._state_handler.topography.fd = fd
         self._state_handler.topography.dzmin = dzmin
@@ -1101,16 +1098,13 @@ class SubSurfaceModeler:
         self._state_handler.topography.rx = rx
         self._state_handler.topography.ry = ry
         if self._state_handler.topography.category == 'random':
-            print("random")
             np.random.seed(self._state_handler.topography.seed)
-            print("set seed")
             self._geo_model.set_topography(
                 source='random', 
                 fd=self._state_handler.topography.fd, 
                 d_z=np.array([self._state_handler.topography.dzmin, self._state_handler.topography.dzmax]),
                 resolution=np.array([self._state_handler.topography.rx, self._state_handler.topography.ry])
                 )
-            print("set topography")
         self._state_handler.topography.on = True
         self.dirty("topography")
 
@@ -1253,36 +1247,6 @@ class SubSurfaceModeler:
 
     def compute_geo_model(self):
         gp.compute_model(self._geo_model)
-
-    @property
-    def litho(self):
-        resolution = self._geo_model._grid.regular_grid.resolution
-        if len(resolution) != 3:
-            return None
-
-        nx, ny, nz = resolution
-        size = nx * ny * nz
-        array = self._geo_model.solutions.lith_block
-        print("litho size", (nx, ny, nz), size, array.size)
-        if size != array.size:
-            return None
-
-        return array
-
-    @property
-    def blanking(self):
-        resolution = self._geo_model._grid.regular_grid.resolution
-        if len(resolution) != 3:
-            return None
-
-        nx, ny, nz = resolution
-        size = nx * ny * nz
-        array = self._geo_model._grid.regular_grid.mask_topo
-        print("blanking size", (nx, ny, nz), size, array.size)
-        if size != array.size:
-            return None
-
-        return array.view().reshape(nx, ny, nz)
 
     # -----------------------------------------------------
     # Import / Export data
