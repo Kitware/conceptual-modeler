@@ -72,7 +72,7 @@
     >
       <v-icon v-text="`$resetCamera`" />
     </v-btn>
-    <v-progress-linear indeterminate absolute bottom :active="busy" />
+    <v-progress-linear background-color="success" color="error" indeterminate absolute bottom :active="busy" />
   </v-app-bar>
   <v-main>
     <!-- import dialog -->
@@ -908,7 +908,7 @@
             selectable
             selected-color="red"
             item-disabled="locked"
-            :items="allsurfaces"
+            :items="elements"
           >
             <template v-slot:prepend="{ item }">
               <v-icon

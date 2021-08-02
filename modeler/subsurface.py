@@ -441,21 +441,14 @@ class Surface:
 
     @property
     def html(self):
-        surfaceid = self.id+"_surface"
-        pointsid = self.id+"_points"
-        orientationsid = self.id+"_orientations"
-        return {
-            "id": self.id,
-            "name": self.name,
-            "color": self.color,
-            "feature": self.stack.feature.value,
-            "stackname": self.stack.name,
-            "children": [
-                { "id": surfaceid, "name": "surface" },
-                { "id": pointsid, "name": "points" },
-                { "id": orientationsid, "name": "orientations" },
-            ],
-        }
+            return {
+                "id": self.id,
+                "name": self.name,
+                "color": self.color,
+                "feature": self.stack.feature.value,
+                "stackname": self.stack.name,
+                "children": [],
+            }
 
     def export_state(self, depth=-1):
         out = {
@@ -768,7 +761,6 @@ class StateManager:
         active_stack = self.stacks.stack
         active_stack_id = None
         stack_actions = {}
-        allsurfaces_html = self.allsurfaces_html()
         surfaces = None
         surfaces_html = None
         active_surface = None
@@ -811,7 +803,6 @@ class StateManager:
             "stacks": stacks_html,
             "activeStackId": active_stack_id,
             "activeStackActions": stack_actions,
-            "allsurfaces": allsurfaces_html,
             "surfaces": surfaces_html,
             "activeSurfaceId": active_surface_id,
             "activeSurfaceActions": surface_actions,
@@ -860,19 +851,6 @@ class StateManager:
             ordered_surfaces.extend(mapstacks[stack])
         ordered_surfaces.reverse()
         return ordered_surfaces
-
-    def allsurfaces_html(self):
-        results = []
-        results.append({"id": "grid", "name": "grid", "color": "#bdbdbd", "children": [],})
-        ordered_surfaces = self.get_ordered_surfaces()
-        for surfaceid in ordered_surfaces:
-            surface = self.find_surface_by_id(surfaceid)
-            item = surface.html
-            if surfaceid == "Surface_1":
-                item["locked"] = True
-                item["children"] = []
-            results.append(item)
-        return results
 
     def move(self, type, direction):
         active_stack = self.stacks.stack
@@ -1041,7 +1019,7 @@ class SubSurfaceModeler:
         """type@app: Stack, Surface, Point, Orientation"""
         dirty_list = []
         stack_state_list = ["stacks", "activeStackId", "activeStackActions"]
-        surface_state_list = ["allsurfaces", "surfaces", "activeSurfaceId", "activeSurfaceActions"]
+        surface_state_list = ["surfaces", "activeSurfaceId", "activeSurfaceActions"]
         point_state_list = ["points", "activePointId", "activePointActions"]
         orientation_state_list = [
             "orientations",

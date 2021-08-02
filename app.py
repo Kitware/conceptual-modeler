@@ -76,7 +76,6 @@ def update_io():
 
 @app.trigger("compute")
 def compute():
-    print("trigger::compute")
     modeler.compute_geo_model()
     viz.compute()
 

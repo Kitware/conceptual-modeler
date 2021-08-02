@@ -12,10 +12,11 @@ from vtkmodules.vtkCommonDataModel import (
 )
 from vtkmodules.vtkFiltersCore import (
     vtkCutter, 
+    vtkGlyph3D,
     vtkThreshold,
 )
-from vtkmodules.vtkFiltersCore import (
-    vtkGlyph3D,
+from vtkmodules.vtkFiltersGeometry import (
+    vtkDataSetSurfaceFilter,
 )
 from vtkmodules.vtkFiltersModeling import (
     vtkOutlineFilter,
@@ -203,7 +204,7 @@ class ViewView:
         glyph3D.SetSourceConnection(arrowSource.GetOutputPort())
         glyph3D.SetInputData(points_polydata)
         glyph3D.SetVectorModeToUseVector()
-        glyph3D.SetScaleFactor(radius)
+        glyph3D.SetScaleFactor(radius*2.0)
         glyph3D.Update()
 
         mapper = vtkPolyDataMapper()
@@ -258,6 +259,37 @@ class ViewView:
         item = {
             "name": name,
             "source": surface_polydata,
+            "mapper": mapper,
+            "actor": actor,
+        }
+        self._scene[name] = item
+        return item
+
+    def add_skin(self, source, surface, color, valuerange):
+        thresholdfilter = vtkThreshold()
+        thresholdfilter.SetInputData(source)
+        thresholdfilter.ThresholdBetween(valuerange[0], valuerange[1])
+        thresholdfilter.Update()
+
+        surfacefilter = vtkDataSetSurfaceFilter()
+        surfacefilter.SetInputConnection(thresholdfilter.GetOutputPort())
+        surfacefilter.Update()
+
+        mapper = vtkPolyDataMapper()
+        mapper.SetInputData(surfacefilter.GetOutput())
+        mapper.Update()
+
+        actor = vtkActor()
+        actor.SetMapper(mapper)
+        rgbcolor = hextorgb(color)
+        actor.GetProperty().SetColor(rgbcolor[0],rgbcolor[1],rgbcolor[2])
+
+        self.renderer.AddActor(actor)
+        
+        name = surface+"_skin"
+        item = {
+            "name": name,
+            "source": surfacefilter,
             "mapper": mapper,
             "actor": actor,
         }
@@ -367,7 +399,9 @@ class VtkViewer:
     def state(self):
         bounds = self._grid.GetBounds()
         resolutions = self.resolutions
+        elements_html = self.elements_html()
         return {
+            "elements": elements_html,
             "visibility": [],
             "vtkCutOrigin": tuple(self._slice_planes[0].GetOrigin()),
             "vtkView3D": self._app.scene(self._views["vtkView3D"].view),
@@ -407,11 +441,51 @@ class VtkViewer:
 
     def get_ordered_surfaces(self):
         ordered_surfaces = []
-        mapstacks = self._modeler._state_handler.map_stack_to_surfaces()
-        for stack in mapstacks.keys():
-            ordered_surfaces.extend(mapstacks[stack])
-        ordered_surfaces.reverse()
+        stacks = self._modeler.state_handler.stacks.ids
+        stacks.reverse()
+        for stack in stacks:
+            stack_object = self._modeler.state_handler.find_stack_by_id(stack)
+            surfaces = stack_object.surfaces.ids
+            surfaces.reverse()
+            ordered_surfaces.extend(surfaces)
+        # mapstacks = self._modeler._state_handler.map_stack_to_surfaces()
+        # for stack in mapstacks.keys():
+        #     ordered_surfaces.extend(mapstacks[stack])
+        # ordered_surfaces.reverse()
         return ordered_surfaces
+
+    def elements_html(self):
+        results = []
+        results.append({"id": "grid", "name": "grid", "color": "#bdbdbd", "children": [],})
+        ordered_surfaces = self.get_ordered_surfaces()
+        for surfaceid in ordered_surfaces:
+            surface = self._modeler.state_handler.find_surface_by_id(surfaceid)
+            item = surface.html
+            children = self.get_children_elements(item)
+            if children:
+                item["children"] = children
+                results.append(item)
+            else:
+                item["locked"] = True
+                results.append(item)
+        return results
+
+    def get_children_elements(self, item):
+        children = []
+        id = item["id"]
+        skinid = id+"_skin"
+        if skinid in self._current_actors:
+            children.append({ "id": skinid, "name": "skin" })
+        surfaceid = id+"_surface"
+        if surfaceid in self._current_actors:
+            children.append({ "id": surfaceid, "name": "surface" })
+        pointsid = id+"_points"
+        if pointsid in self._current_actors:
+            children.append({ "id": pointsid, "name": "points" })
+        orientationsid = id+"_orientations"
+        if orientationsid in self._current_actors:
+            children.append({ "id": orientationsid, "name": "orientations" })
+        return children
 
     def dirty(self, *args):
         state = self.state
@@ -436,7 +510,8 @@ class VtkViewer:
     
     def set_visibility(self, name, on_off):
         item = self._views["vtkView3D"].get(name)
-        item.get("actor").SetVisibility(on_off)
+        if item:
+            item.get("actor").SetVisibility(on_off)
 
     def toggle_visibility(self, name):
         item = self._views["vtkView3D"].get(name)
@@ -491,13 +566,14 @@ class VtkViewer:
         for name in self._current_actors:
             self._views["vtkView3D"].remove(name)
 
+        self.update_lithography()
+        self.update_skin()
         self.update_surface()
         self.update_surface_points()
         self.update_surface_orientations()
-
-        self.update_lithography()
         self.update_cube_axes()
         self.update_views()
+        self.dirty("elements")
 
     def update_lithography(self):
         litho = self._modeler._geo_model.solutions.lith_block
@@ -563,11 +639,12 @@ class VtkViewer:
         surfaces = self.get_ordered_surfaces()
         # remove basement from list
         surfaces.remove('Surface_1')
-        colors = self._modeler._geo_model.surfaces.colors.colordict
         for surface in surfaces:
-            color = colors[surface]
             surface_filter = self._modeler._geo_model._surface_points.df.surface == surface
             points = self._modeler._geo_model._surface_points.df[surface_filter][["X", "Y", "Z"]].values
+            surface_filter = self._modeler._geo_model._surfaces.df.surface == surface
+            the_surface_df = self._modeler._geo_model._surfaces.df[surface_filter]
+            color = the_surface_df.color.tolist()[0]
             name = surface+"_points"
             self._current_actors.append(name)
             view.add_surface_points(surface, color, radius, points)
@@ -580,11 +657,12 @@ class VtkViewer:
         surfaces = self.get_ordered_surfaces()
         # remove basement from list
         surfaces.remove('Surface_1')
-        colors = self._modeler._geo_model.surfaces.colors.colordict
         for surface in surfaces:
-            color = colors[surface]
             surface_filter = self._modeler._geo_model._orientations.df.surface == surface
             orientations = self._modeler._geo_model._orientations.df[surface_filter][["X", "Y", "Z", "G_x", "G_y", "G_z"]].values
+            surface_filter = self._modeler._geo_model._surfaces.df.surface == surface
+            the_surface_df = self._modeler._geo_model._surfaces.df[surface_filter]
+            color = the_surface_df.color.tolist()[0]
             name = surface+"_orientations"
             self._current_actors.append(name)
             view.add_surface_orientations(surface, color, radius, orientations)
@@ -595,24 +673,39 @@ class VtkViewer:
         surfaces = self.get_ordered_surfaces()
         # remove basement from list
         surfaces.remove('Surface_1')
-        colors = self._modeler._geo_model.surfaces.colors.colordict
         for surface in surfaces:
-            color = colors[surface]
             surface_filter = self._modeler._geo_model._surfaces.df.surface == surface
-            test = self._modeler._geo_model._surfaces.df[surface_filter]
-            vertices = test.vertices.values.tolist()[0]
-            simplices = test.edges.values.tolist()[0]
+            the_surface_df = self._modeler._geo_model._surfaces.df[surface_filter]
+            vertices = the_surface_df.vertices.values.tolist()[0]
+            simplices = the_surface_df.edges.values.tolist()[0]
+            color = the_surface_df.color.tolist()[0]
             name = surface+"_surface"
             self._current_actors.append(name)
             view.add_surface(surface, color, vertices, simplices)
             self.set_visibility(name, False)
 
+    def update_skin(self):
+        view = self._views["vtkView3D"]
+        surfaces = self.get_ordered_surfaces()
+        for surface in surfaces:
+            surface_object = self._modeler._state_handler.find_surface_by_id(surface)
+            if surface_object.stack.feature.value != "Fault":
+                surface_filter = self._modeler._geo_model._surfaces.df.surface == surface
+                the_surface_df = self._modeler._geo_model._surfaces.df[surface_filter]
+                value = the_surface_df.id.tolist()[0]
+                color = the_surface_df.color.tolist()[0]
+                valuerange = [float(value) - 0.5, float(value) + 0.5]
+                name = surface+"_skin"
+                self._current_actors.append(name)
+                view.add_skin(self._grid, surface, color, valuerange)
+                self.set_visibility(name, False)
+
     def update_visibility(self, visibility):
         surfaces = self.get_ordered_surfaces()
-        # remove basement from list
-        surfaces.remove('Surface_1')
         self.set_visibility("grid", False)
         for surface in surfaces:
+            name = surface+"_skin"
+            self.set_visibility(name, False)
             name = surface+"_surface"
             self.set_visibility(name, False)
             name = surface+"_points"
