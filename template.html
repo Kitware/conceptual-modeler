@@ -918,6 +918,18 @@
               >
               </v-icon>
             </template>
+            <template v-slot:append="{ item }">
+              <v-checkbox 
+                  dense 
+                  hide-details
+                  v-if="item.children"
+                  :color="item.color" 
+                  v-model="opacity"
+                  :value="item.id"
+                  off-icon="mdi-water-minus"
+                  on-icon="mdi-water">
+                </v-checkbox>
+            </template>
           </v-treeview>
           <v-divider class="mb-2" />
         </v-card-text>

@@ -32,6 +32,10 @@ viz = VtkViewer(app, modeler)
 def update_visibility():
     viz.update_visibility(app.get("visibility"))
 
+@app.change("opacity")
+def update_opacity():
+    viz.update_opacity(app.get("opacity"))
+
 @app.change("vtkCutOrigin")
 def update_slices():
     viz.update_slice_origin(app.get("vtkCutOrigin"))

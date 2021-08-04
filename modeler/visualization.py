@@ -388,6 +388,7 @@ class VtkViewer:
                 item = view.add("grid", self._filter_threshold)
                 item.get("actor").GetProperty().SetEdgeVisibility(1)
                 self.set_visibility("grid", False)
+                self.set_opacity("grid", 0.2)
                 view.add_cube_axes(self._grid)
             index += 1
             view.resetCamera()
@@ -402,6 +403,7 @@ class VtkViewer:
         elements_html = self.elements_html()
         return {
             "elements": elements_html,
+            "opacity": [],
             "visibility": [],
             "vtkCutOrigin": tuple(self._slice_planes[0].GetOrigin()),
             "vtkView3D": self._app.scene(self._views["vtkView3D"].view),
@@ -456,7 +458,7 @@ class VtkViewer:
 
     def elements_html(self):
         results = []
-        results.append({"id": "grid", "name": "grid", "color": "#bdbdbd", "children": [],})
+        results.append({"id": "grid", "name": "grid", "color": "#bdbdbd", "opacity": True, "children": [],})
         ordered_surfaces = self.get_ordered_surfaces()
         for surfaceid in ordered_surfaces:
             surface = self._modeler.state_handler.find_surface_by_id(surfaceid)
@@ -464,6 +466,7 @@ class VtkViewer:
             children = self.get_children_elements(item)
             if children:
                 item["children"] = children
+                item["opacity"] = True
                 results.append(item)
             else:
                 item["locked"] = True
@@ -512,6 +515,11 @@ class VtkViewer:
         item = self._views["vtkView3D"].get(name)
         if item:
             item.get("actor").SetVisibility(on_off)
+
+    def set_opacity(self, name, value):
+        item = self._views["vtkView3D"].get(name)
+        if item:
+            item.get("actor").GetProperty().SetOpacity(value)
 
     def toggle_visibility(self, name):
         item = self._views["vtkView3D"].get(name)
@@ -683,6 +691,7 @@ class VtkViewer:
             self._current_actors.append(name)
             view.add_surface(surface, color, vertices, simplices)
             self.set_visibility(name, False)
+            self.set_opacity(name, 0.2)
 
     def update_skin(self):
         view = self._views["vtkView3D"]
@@ -699,6 +708,7 @@ class VtkViewer:
                 self._current_actors.append(name)
                 view.add_skin(self._grid, surface, color, valuerange)
                 self.set_visibility(name, False)
+                self.set_opacity(name, 0.2)
 
     def update_visibility(self, visibility):
         surfaces = self.get_ordered_surfaces()
@@ -714,4 +724,23 @@ class VtkViewer:
             self.set_visibility(name, False)
         for item in visibility:
             self.set_visibility(item, True)
+        self.update_views()
+
+
+    def update_opacity(self, opacity):
+        surfaces = self.get_ordered_surfaces()
+        self.set_opacity("grid", 0.2)
+        for surface in surfaces:
+            name = surface+"_skin"
+            self.set_opacity(name,  0.2)
+            name = surface+"_surface"
+            self.set_opacity(name,  0.2)
+        for item in opacity:
+            if item == "grid":
+                self.set_opacity("grid", 1.0)
+            else:
+                name = item+"_skin"
+                self.set_opacity(name,  1.0)
+                name = item+"_surface"
+                self.set_opacity(name,  1.0)
         self.update_views()
