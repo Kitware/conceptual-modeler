@@ -1,0 +1,6 @@
+trame
+gempy==2.2.10
+Theano==1.0.5
+gdal==3.3.3
+PyQt5
+matplotlib==3.4.3
