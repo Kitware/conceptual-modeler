@@ -1,4 +1,4 @@
-trame<2.0.0
+trame>=2.0.0
 pandas==1.3.4
 gempy==2.2.10
 Theano==1.0.5

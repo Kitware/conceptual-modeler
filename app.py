@@ -2,19 +2,21 @@ import os
 import time
 from collections import defaultdict
 
+from trame.app import get_server
+from trame.assets.local import LocalFileManager
+from trame.ui.vuetify import SinglePageLayout
+from trame.widgets import html, vtk, vuetify, trame, matplotlib
+
 # Allow 1MB 1024*1024 messages
 #os.environ["WSLINK_MAX_MSG_SIZE"] = "1048576"
 
-from trame.internal.app import get_app_instance
-
 BASE = os.path.abspath(os.path.dirname(__file__))
 
-from trame import change, get_state, update_state, state
-from trame.layouts import SinglePageWithDrawer
-from trame.html import Div, Input, observer, Span, vtk, vuetify, widgets, matplotlib
-
-
-from pywebvue.utils import read_file_as_base64_url
+# from trame.internal.app import get_app_instance
+# from trame import change, get_state, update_state, state
+# from trame.layouts import SinglePageWithDrawer
+# from trame.html import Div, Input, observer, Span, vtk, vuetify, widgets, matplotli
+# from pywebvue.utils import read_file_as_base64_url
 
 from modeler.subsurface import SubSurface
 from modeler.visualization import VtkViewer
@@ -33,8 +35,14 @@ DEFAULT_NEW = {
 
 TOPOGRAPHY_ITEMS = ['random', 'gdal', 'saved']
 TOPOGRAPHY_CATEGORY = {'random': 0, 'gdal': 1, 'saved': 2}
+
 # -----------------------------------------------------------------------------
 # Server setup
+# -----------------------------------------------------------------------------
+
+server = get_server()
+state, ctrl = server.state, server.controller
+
 # -----------------------------------------------------------------------------
 
 class MatplotlibStateHandler:
@@ -44,7 +52,7 @@ class MatplotlibStateHandler:
         self._w_inch = 1
         self._h_inch = 1
         state[self._name] = {}
-    
+
     @property
     def size(self):
         if state[self._name] is not None:
@@ -259,13 +267,13 @@ def view_buttons():
     ):
         with vuetify.VBtn(
             small=True,
-            icon=True, 
+            icon=True,
             value="singleView",
         ):
             vuetify.VIcon("mdi-border-all-variant")
         with vuetify.VBtn(
             small=True,
-            icon=True, 
+            icon=True,
             value="multiView",
         ):
             vuetify.VIcon("mdi-border-all")
@@ -312,25 +320,25 @@ def export_button():
         dense=True,
     )
 
-@change("run")
+@state.change("run")
 def compute(run, **kwargs):
     if run:
         application.subsurface.compute_geo_model()
         application.viz.compute(computing=True)
-        update_state("run", False)
+        state.run = False
         application.html_view3D.update()
         update_viewX()
         update_viewY()
         update_viewZ()
 
-@change("import_model_file")
+@state.change("import_model_file")
 def import_model(import_model_file, **kwargs):
     if import_model_file:
         application.subsurface.parse_zip_file(import_model_file)
-        update_state("import_state", False)
-        update_state("import_model_file", None)
+        state.import_state = False
+        state.import_model_file = None
 
-@change("export_model_file")
+@state.change("export_model_file")
 def export_state():
     #TODO: Export state
     print("Export state")
@@ -357,7 +365,7 @@ def standard_buttons():
         dense=True,
     )
     with vuetify.VBtn(
-            icon=True, 
+            icon=True,
             click=application.html_view3D.reset_camera,
         ):
         vuetify.VIcon("mdi-focus-field")
@@ -372,7 +380,7 @@ def standard_buttons():
         change=(theme_mode, "[$event]"),
     )
 
-@change("cube_axes_visibility")
+@state.change("cube_axes_visibility")
 def update_cube_axes_visibility(cube_axes_visibility, **kwargs):
     dirty = application.viz.set_cube_axes_visibility(cube_axes_visibility)
     if dirty:
@@ -436,7 +444,7 @@ def ui_card_title(title, ui_icon, file_type, file_id):
         dense=True,
     ) as card_title:
         vuetify.VIcon(ui_icon, classes="mr-3", color="grey darken-3")
-        Div(title)
+        html.Div(title)
         vuetify.VSpacer()
         with vuetify.VBtn(
             click=f"importType='{file_type}';document.getElementById('{file_id}').click();",
@@ -446,7 +454,7 @@ def ui_card_title(title, ui_icon, file_type, file_id):
             small=True,
         ):
             vuetify.VIcon("mdi-database-arrow-up-outline")
-        Input(
+        html.Input(
             id=file_id,
             type="file",
             style="display: none",
@@ -463,12 +471,12 @@ def ui_property_card_title(title, ui_icon):
         dense=True,
     ) as card_title:
         vuetify.VIcon(ui_icon, classes="mr-3", color="grey darken-3")
-        Div(title)
+        html.Div(title)
     return card_title
 
 def ui_workflow_card_text(condition):
     card_text = vuetify.VCardText(
-        v_show=condition, 
+        v_show=condition,
         classes="pa-1",
     )
     return card_text
@@ -479,7 +487,7 @@ def ui_card_text():
 
 def ui_workflow_card_actions(condition):
     card_actions = vuetify.VCardActions(
-        v_show=condition, 
+        v_show=condition,
         classes="px-0 py-1",
         hide_details=True,
         dense=True,
@@ -494,12 +502,12 @@ def ui_card_actions():
     )
     return card_actions
 
-@change("importFile")
+@state.change("importFile")
 def import_file(importType, importFile, **kwargs):
     if importFile:
         application.subsurface.import_data(importType, importFile)
     # reset layout state
-    update_state("importFile", None)
+    state.importFile = None
 
 # -----------------------------------------------------------------------------
 # UI Property Card
@@ -555,7 +563,7 @@ def property_card_text():
 def property_card_actions():
     vuetify.VSpacer()
 
-@change("current_representation")
+@state.change("current_representation")
 def update_representation(active_pipeline_card, current_representation, **kwargs):
     print("representation entry ", time.time())
     dirty = application.viz.set_representation(active_pipeline_card, current_representation)
@@ -564,7 +572,7 @@ def update_representation(active_pipeline_card, current_representation, **kwargs
         application.html_view3D.update()
     print("representation update geometry ", time.time())
 
-@change("current_opacity")
+@state.change("current_opacity")
 def update_opacity(active_pipeline_card, current_opacity, **kwargs):
     print("opacity entry ", time.time())
     dirty = application.viz.set_opacity(active_pipeline_card, current_opacity)
@@ -595,7 +603,7 @@ def grid_card():
             grid_card_actions()
 
 def grid_card_text():
-    Div("Extent")
+    html.Div("Extent")
     vuetify.VDivider(classes="mb-2")
     with vuetify.VRow(classes="pa-0 pt-1", dense=True):
         with vuetify.VCol(cols="6"):
@@ -652,7 +660,7 @@ def grid_card_text():
                 type="number",
                 v_model=("grid.extent[5]",),
             )
-    Div("Resolution")
+    html.Div("Resolution")
     vuetify.VDivider(classes="mb-2")
     with vuetify.VRow(classes="pa-0 pt-1", dense=True):
         with vuetify.VCol(cols="4"):
@@ -706,16 +714,16 @@ def grid_card_actions():
     ):
         vuetify.VIcon("mdi-check")
 
-@change("grid")
+@state.change("grid")
 def update_grid(grid, **kwargs):
     extent = [float(x) for x in grid.get("extent")]
     resolution = [int(x) for x in grid.get("resolution")]
     slider_x_max = resolution[0] - 1
-    update_state("slider_x_max", slider_x_max)
+    state.slider_x_max = slider_x_max
     slider_y_max = resolution[1] - 1
-    update_state("slider_y_max", slider_y_max)
+    state.slider_y_max = slider_y_max
     slider_z_max = resolution[2] - 1
-    update_state("slider_z_max", slider_z_max)
+    state.slider_z_max = slider_z_max
     dirty_subsurface = application.subsurface.update_grid(extent, resolution)
     dirty_viz = application.viz.update_grid()
     if dirty_viz:
@@ -738,13 +746,13 @@ def ss_move(type, direction):
 def ss_new(type, data):
     application.subsurface.add(type, data)
     # Reset layout state
-    update_state(f"{type.lower()}New", DEFAULT_NEW[type])
+    state[f"{type.lower()}New"] = DEFAULT_NEW[type]
 
 def ss_new_with_id(type, data, idname, id):
     data[idname] = id
     application.subsurface.add(type, data)
     # Reset layout state
-    update_state(f"{type.lower()}New", DEFAULT_NEW[type])
+    state[f"{type.lower()}New"] = DEFAULT_NEW[type]
 
 def ss_remove(type, id):
     application.subsurface.remove(type, id)
@@ -810,7 +818,7 @@ def stacks_card_text():
 def stacks_card_actions():
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="!activeStackId",
     ):
         with vuetify.VCol(cols="5"):
@@ -842,7 +850,7 @@ def stacks_card_actions():
             vuetify.VIcon("mdi-check")
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="activeStackId",
     ):
         with vuetify.VBtn(
@@ -948,7 +956,7 @@ def surfaces_card_text():
 def surfaces_card_actions():
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="!activeSurfaceId",
     ):
         with vuetify.VCol(cols="5"):
@@ -972,7 +980,7 @@ def surfaces_card_actions():
             vuetify.VIcon("mdi-check")
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="activeSurfaceId",
     ):
         with vuetify.VBtn(
@@ -1074,7 +1082,7 @@ def points_card_text():
 def points_card_actions():
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="!activePointId",
     ):
         with vuetify.VCol(cols="3"):
@@ -1115,7 +1123,7 @@ def points_card_actions():
             vuetify.VIcon("mdi-check")
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="activePointId",
     ):
         vuetify.VSpacer()
@@ -1197,7 +1205,7 @@ def orientations_card_text():
 def orientations_card_actions():
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="!activeOrientationId",
     ):
         with vuetify.VCol(cols="3"):
@@ -1264,7 +1272,7 @@ def orientations_card_actions():
             )
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="activeOrientationId",
     ):
         vuetify.VSpacer()
@@ -1388,7 +1396,7 @@ def topography_card_text():
 def topography_card_actions():
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="topography_category === 0",
     ):
         vuetify.VSpacer()
@@ -1412,7 +1420,7 @@ def topography_card_actions():
             vuetify.VIcon("mdi-check")
     with vuetify.VRow(
         classes="py-1",
-        dense=True, 
+        dense=True,
         v_show="topography_category > 0",
     ):
         vuetify.VSpacer()
@@ -1434,7 +1442,7 @@ def topography_card_actions():
             color="success",
         ):
             vuetify.VIcon("mdi-database-check-outline")
-        Input(
+        html.Input(
             id="topography_id",
             type="file",
             style="display: none",
@@ -1442,18 +1450,18 @@ def topography_card_actions():
             change="topography.on=true;topography.category=topography_items[topography_category];topography_file=$event.target.files[0];",
         )
 
-@change("topography")
+@state.change("topography")
 def update_topography(topography, **kwargs):
     if topography["on"] == True:
         application.subsurface.update_topography(topography)
         application.viz.update_topography()
 
-@change("topography_file")
+@state.change("topography_file")
 def update_topography_file(topography_file, topography, **kwargs):
     if topography_file:
         application.subsurface.update_topography_file(topography["category"], topography_file)
         application.viz.update_topography()
-    update_state("topography_file", None)
+    state.topography_file = None
 
 def reset_topography():
     application.subsurface.dirty("topography")
@@ -1466,14 +1474,15 @@ app = get_app_instance() # need cleanup
 app.serve.update({"__global": BASE})
 app.styles+=["/__global/assets/style.css"]
 
-ICONS = {
-    "delete": app.url(os.path.join(BASE, "icons/trash-can-outline.svg")),
-    "collapsed": app.url(os.path.join(BASE, "icons/chevron-up.svg")),
-    "collapsable": app.url(os.path.join(BASE, "icons/chevron-down.svg")),
-}
+icon_manager = LocalFileManager(__file__)
+icon_manager.url("delete", "./icons/trash-can-outline.svg")
+icon_manager.url("collapsed", "./chevron-up.svg")
+icon_manager.url("collapsable", "./icons/chevron-down.svg")
+
+ICONS = icon_manager.assets
 
 def pipeline_widget():
-    widgets.GitTree(
+    trame.GitTree(
         width=325,
         text_color=("$vuetify.theme.dark ? ['white', 'black'] : ['black', 'white']",),
         active_background="#bdbdbd",
@@ -1487,7 +1496,7 @@ def pipeline_widget():
     )
 
 def get_pipeline(id):
-    _pipelines = get_state("pipelines")
+    _pipelines = state.pipelines
     for item in _pipelines[0]:
         if item["id"] == id:
             return item["pipeline"]
@@ -1514,7 +1523,7 @@ def actives_change(ids):
             opacity = application.viz.get_opacity(_pipeline)
             update_state("current_representation", representation)
             update_state("current_opacity", opacity)
-        else: 
+        else:
             update_state("active_pipeline_card", None)
         update_state("active_ids", ids)
 
@@ -1644,7 +1653,7 @@ application = Application()
 
 create_toolbar(application.layout.toolbar)
 create_drawer(application.layout.drawer)
-create_content(application.layout.content)        
+create_content(application.layout.content)
 
 application.layout.state = {
     "active_pipeline_card": None,
