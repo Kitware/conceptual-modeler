@@ -1,0 +1,5 @@
+stack,feature,order
+left_series,Erosion,1
+seafloor_series,Erosion,4
+onlap_series,Onlap,2
+right_series,Erosion,3

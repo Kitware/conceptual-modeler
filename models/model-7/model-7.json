@@ -1,0 +1,713 @@
+[
+  {
+    "action": "APP_GRID_UPDATE",
+    "arg": {
+      "extent": [
+        0,
+        2000,
+        0,
+        2000,
+        0,
+        1600
+      ],
+      "resolution": [
+        100,
+        100,
+        80
+      ]
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "Strat_Series",
+      "feature": "Erosion",
+      "order": 1
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "Fault_2",
+      "feature": "Fault",
+      "order": 2
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "Fault_1",
+      "feature": "Fault",
+      "order": 3
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Gneiss",
+      "order": 0,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Schist",
+      "order": 1,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "order": 2,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Shale",
+      "order": 3,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "order": 4,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "order": 5,
+      "stackname": "Strat_Series"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Fault_2",
+      "order": 0,
+      "stackname": "Fault_2"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "Fault_1",
+      "order": 0,
+      "stackname": "Fault_1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Fault_1",
+      "xyz": [
+        750,
+        1500,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Fault_1",
+      "xyz": [
+        750,
+        500,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Fault_2",
+      "xyz": [
+        1250,
+        1500,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Fault_2",
+      "xyz": [
+        1250,
+        1500,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Gneiss",
+      "xyz": [
+        1000,
+        1000,
+        300
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Gneiss",
+      "xyz": [
+        250,
+        1000,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Gneiss",
+      "xyz": [
+        1750,
+        1000,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        250,
+        1000,
+        700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        1750,
+        1000,
+        700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        1000,
+        1000,
+        500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        250,
+        1000,
+        900
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        1750,
+        1000,
+        900
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        1000,
+        1000,
+        700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Shale",
+      "xyz": [
+        1750,
+        1000,
+        1200
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Shale",
+      "xyz": [
+        250,
+        1000,
+        1200
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Shale",
+      "xyz": [
+        1000,
+        1000,
+        1000
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        250,
+        1000,
+        1300
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        1750,
+        1000,
+        1300
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        1000,
+        1000,
+        1100
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        250,
+        1000,
+        1500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        1000,
+        1000,
+        1200
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        1750,
+        1000,
+        1500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Fault_1",
+      "xyz": [
+        750,
+        1000,
+        500
+      ],
+      "poleVector": [
+        0.9659258262900683,
+        1.000059145898569e-12,
+        0.2588190451035207
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Fault_2",
+      "xyz": [
+        1250,
+        1000,
+        500
+      ],
+      "poleVector": [
+        -0.9659258262880683,
+        9.998225623042932e-13,
+        0.2588190451035207
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        1000,
+        1000,
+        500
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        250,
+        500,
+        700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        1750,
+        500,
+        700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        250,
+        1500,
+        700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Schist",
+      "xyz": [
+        1750,
+        1500,
+        700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        1000,
+        1000,
+        700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        250,
+        500,
+        900
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        1750,
+        500,
+        900
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        250,
+        1500,
+        900
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone_2",
+      "xyz": [
+        1750,
+        1500,
+        900
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        1000,
+        1000,
+        1000
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        250,
+        500,
+        1300
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        1750,
+        500,
+        1300
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        250,
+        1500,
+        1300
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Siltstone",
+      "xyz": [
+        1750,
+        1500,
+        1300
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        250,
+        1500,
+        1500
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        250,
+        500,
+        1500
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        1750,
+        500,
+        1500
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "Sandstone",
+      "xyz": [
+        1750,
+        1500,
+        1500
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_RANDOM_TOPOGRAPHY_SET",
+    "arg": {
+      "tFD": 1.9,
+      "tDZMin": 1400,
+      "tDZMax": 1600,
+      "tRx": 200,
+      "tRy": 200
+    }
+  },
+  {
+    "action": "APP_SLICE_ORIGIN_UPDATE",
+    "arg": {
+      "force": false,
+      "origin": [
+        1690,
+        1010,
+        1450
+      ]
+    }
+  },
+  {
+    "action": "APP_COMPUTE_INTERPOLATION"
+  },
+  {
+    "action": "VIEW_RESET_CAMERA"
+  }
+]
