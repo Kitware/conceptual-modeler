@@ -3,20 +3,14 @@ import time
 from collections import defaultdict
 
 from trame.app import get_server
-from trame.assets.local import LocalFileManager
-from trame.ui.vuetify import SinglePageLayout
+from trame.assets.local import LocalFileManager, to_url
+from trame.ui.vuetify import SinglePageWithDrawerLayout
 from trame.widgets import html, vtk, vuetify, trame, matplotlib
+
+import cm_assets
 
 # Allow 1MB 1024*1024 messages
 #os.environ["WSLINK_MAX_MSG_SIZE"] = "1048576"
-
-BASE = os.path.abspath(os.path.dirname(__file__))
-
-# from trame.internal.app import get_app_instance
-# from trame import change, get_state, update_state, state
-# from trame.layouts import SinglePageWithDrawer
-# from trame.html import Div, Input, observer, Span, vtk, vuetify, widgets, matplotli
-# from pywebvue.utils import read_file_as_base64_url
 
 from modeler.subsurface import SubSurface
 from modeler.visualization import VtkViewer
@@ -42,6 +36,11 @@ TOPOGRAPHY_CATEGORY = {'random': 0, 'gdal': 1, 'saved': 2}
 
 server = get_server()
 state, ctrl = server.state, server.controller
+
+state.trame__title = "Conceptual Modeler"
+state.trame__favicon = "__global/assets/logo.svg"
+
+server.enable_module(cm_assets)
 
 # -----------------------------------------------------------------------------
 
@@ -84,29 +83,29 @@ class Application:
         self.subsurface = SubSurface(self)
         self.viz = VtkViewer(self, self.subsurface)
 
-        self.html_view3D = vtk.VtkRemoteLocalView(self.viz.getRenderWindow("view3D"), mode='local', namespace='view3D')
-        self.html_viewX = matplotlib.Figure("FigureX", figure=self.viz.update_xfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
-        self.html_viewY = matplotlib.Figure("FigureY", figure=self.viz.update_yfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
-        self.html_viewZ = matplotlib.Figure("FigureZ", figure=self.viz.update_zfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+        self.html_view3D = vtk.VtkRemoteLocalView(self.viz.getRenderWindow("view3D"), trame_server=server, mode='local', namespace='view3D')
+        self.html_viewX = matplotlib.Figure(trame_server=server, figure=self.viz.update_xfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+        self.html_viewY = matplotlib.Figure(trame_server=server, figure=self.viz.update_yfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+        self.html_viewZ = matplotlib.Figure(trame_server=server, figure=self.viz.update_zfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
 
-        logo_path = os.path.join(BASE, "assets/logo.svg")
-        self.layout = SinglePageWithDrawer("Conceptual Modeler", favicon=logo_path, on_ready=self.html_view3D.update)
+        # add view update on ready
+        ctrl.on_server_ready.add(self.html_view3D.update)
+
+        self.layout = SinglePageWithDrawerLayout(server)
         self.layout.title.set_text("Conceptual Modeler")
-        self.layout.logo.children = [Span(
-                f'<img height="32px" width="32px" src="{read_file_as_base64_url(logo_path)}" />',
+        with self.layout.icon:
+            html.Span(
+                f'<img height="32px" width="32px" src="{state.trame__favicon}" />',
                 classes="mr-2",
                 style="display: flex; align-content: center;",
-            )]
+            )
 
     def push_state(self, key, value):
         if key == "pipelines":
             self.pipeline_manager.add_nodes(value)
         if key == "topography":
-            update_state("topography_category", TOPOGRAPHY_CATEGORY[value["category"]])
-        update_state(key, value)
-
-    def pull_state(self, key, value):
-        get_state(key, value)
+            state.topography_category = TOPOGRAPHY_CATEGORY[value["category"]]
+        state[key] = value
 
 # -----------------------------------------------------------------------------
 # Pipeline setup
@@ -301,7 +300,7 @@ def import_button():
         hide_details=True,
         dense=True,
     )
-    Input(
+    html.Input(
         id="model_id",
         type="file",
         style="display: none",
@@ -339,7 +338,7 @@ def import_model(import_model_file, **kwargs):
         state.import_model_file = None
 
 @state.change("export_model_file")
-def export_state():
+def export_state(**kwargs):
     #TODO: Export state
     print("Export state")
 
@@ -1470,13 +1469,9 @@ def reset_topography():
 # UI Drawer Pipeline Widget & Callbacks
 # -----------------------------------------------------------------------------
 
-app = get_app_instance() # need cleanup
-app.serve.update({"__global": BASE})
-app.styles+=["/__global/assets/style.css"]
-
 icon_manager = LocalFileManager(__file__)
 icon_manager.url("delete", "./icons/trash-can-outline.svg")
-icon_manager.url("collapsed", "./chevron-up.svg")
+icon_manager.url("collapsed", "./icons/chevron-up.svg")
 icon_manager.url("collapsable", "./icons/chevron-down.svg")
 
 ICONS = icon_manager.assets
@@ -1511,21 +1506,22 @@ def on_action(event):
 
 def actives_change(ids):
     _id = ids[0]
-    card, prv_ids = get_state("active_pipeline_card", "active_ids")
+    card = state.active_pipeline_card
+    prv_ids = state.active_ids
     _pipeline = get_pipeline(_id)
     if prv_ids == ids:
-        update_state("active_ids", [])
-        update_state("active_pipeline_card", None)
+        state.active_ids = []
+        state.active_pipeline_card = None
     else:
         if _pipeline != 0:
-            update_state("active_pipeline_card", _pipeline)
+            state.active_pipeline_card = _pipeline
             representation = application.viz.get_representation(_pipeline)
             opacity = application.viz.get_opacity(_pipeline)
-            update_state("current_representation", representation)
-            update_state("current_opacity", opacity)
+            state.current_representation = representation
+            state.current_opacity = opacity
         else:
-            update_state("active_pipeline_card", None)
-        update_state("active_ids", ids)
+            state.active_pipeline_card = None
+        state.active_ids = ids
 
 def visibility_change(event):
     _id = event["id"]
@@ -1556,7 +1552,7 @@ def create_content(content):
                     v_show="viewLayout !== 'singleView'",
                     style="position: relative",
                 ):
-                    with observer.SizeObserver("x_figure_size") as x_size:
+                    with trame.SizeObserver("x_figure_size") as x_size:
                         x_size.add_child(application.html_viewX)
                     vuetify.VSlider(
                         label="X",
@@ -1584,7 +1580,7 @@ def create_content(content):
                     v_show="viewLayout !== 'singleView'",
                     style="position: relative; axiscolor: 'white';",
                 ):
-                    with observer.SizeObserver("y_figure_size") as y_size:
+                    with trame.SizeObserver("y_figure_size") as y_size:
                         y_size.add_child(application.html_viewY)
                     vuetify.VSlider(
                         label="Y",
@@ -1604,7 +1600,7 @@ def create_content(content):
                     v_show="viewLayout !== 'singleView'",
                     style="position: relative",
                 ):
-                    with observer.SizeObserver("z_figure_size") as z_size:
+                    with trame.SizeObserver("z_figure_size") as z_size:
                         z_size.add_child(application.html_viewZ)
                     vuetify.VSlider(
                         label="Z",
@@ -1621,29 +1617,29 @@ def create_content(content):
                         thumb_color="blue-grey",
                     )
 
-@change("slice_x")
+@state.change("slice_x")
 def update_slice_x(slice_x, **kwargs):
     application.html_viewX.update(figure=application.viz.update_xfig(**x_fig_state.size,cell_number=[slice_x]))
 
 @state.change("x_figure_size")
 def update_viewX(**kwargs):
-    application.html_viewX.update(figure=application.viz.update_xfig(**x_fig_state.size, cell_number=get_state("slice_x")))
+    application.html_viewX.update(figure=application.viz.update_xfig(**x_fig_state.size, cell_number=state.slice_x))
 
-@change("slice_y")
+@state.change("slice_y")
 def update_slice_y(slice_y, **kwargs):
     application.html_viewY.update(figure=application.viz.update_yfig(**y_fig_state.size,cell_number=[slice_y]))
 
 @state.change("y_figure_size")
 def update_viewY(**kwargs):
-    application.html_viewY.update(figure=application.viz.update_yfig(**y_fig_state.size, cell_number=get_state("slice_y")))
+    application.html_viewY.update(figure=application.viz.update_yfig(**y_fig_state.size, cell_number=state.slice_y))
 
-@change("slice_z")
+@state.change("slice_z")
 def update_slice_z(slice_z, **kwargs):
     application.html_viewZ.update(figure=application.viz.update_zfig(**z_fig_state.size,cell_number=[slice_z]))
 
 @state.change("z_figure_size")
 def update_viewZ(**kwargs):
-    application.html_viewZ.update(figure=application.viz.update_zfig(**z_fig_state.size, cell_number=get_state("slice_z")))
+    application.html_viewZ.update(figure=application.viz.update_zfig(**z_fig_state.size, cell_number=state.slice_z))
 
 # -----------------------------------------------------------------------------
 # GUI Layout
@@ -1655,7 +1651,7 @@ create_toolbar(application.layout.toolbar)
 create_drawer(application.layout.drawer)
 create_content(application.layout.content)
 
-application.layout.state = {
+state.update({
     "active_pipeline_card": None,
     "importType": None,
     "importFile": None,
@@ -1669,7 +1665,7 @@ application.layout.state = {
     "pointNew": DEFAULT_NEW_POINT,
     "orientationNew": DEFAULT_NEW_ORIENTATION,
     "topography_items": TOPOGRAPHY_ITEMS,
-}
+})
 
 # -----------------------------------------------------------------------------
 # CLI
@@ -1677,4 +1673,4 @@ application.layout.state = {
 
 if __name__ == "__main__":
     #print(application.layout.html)
-    application.layout.start()
+    server.start()
