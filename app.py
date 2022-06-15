@@ -83,13 +83,8 @@ class Application:
         self.subsurface = SubSurface(self)
         self.viz = VtkViewer(self, self.subsurface)
 
-        self.html_view3D = vtk.VtkRemoteLocalView(self.viz.getRenderWindow("view3D"), trame_server=server, mode='local', namespace='view3D')
-        self.html_viewX = matplotlib.Figure(trame_server=server, figure=self.viz.update_xfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
-        self.html_viewY = matplotlib.Figure(trame_server=server, figure=self.viz.update_yfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
-        self.html_viewZ = matplotlib.Figure(trame_server=server, figure=self.viz.update_zfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
-
         # add view update on ready
-        ctrl.on_server_ready.add(self.html_view3D.update)
+        ctrl.on_server_ready.add(ctrl.view_3D_update)
 
         self.layout = SinglePageWithDrawerLayout(server)
         self.layout.title.set_text("Conceptual Modeler")
@@ -325,7 +320,7 @@ def compute(run, **kwargs):
         application.subsurface.compute_geo_model()
         application.viz.compute(computing=True)
         state.run = False
-        application.html_view3D.update()
+        ctrl.view_3D_update()
         update_viewX()
         update_viewY()
         update_viewZ()
@@ -365,7 +360,7 @@ def standard_buttons():
     )
     with vuetify.VBtn(
             icon=True,
-            click=application.html_view3D.reset_camera,
+            click=ctrl.view_3D_reset_camera,
         ):
         vuetify.VIcon("mdi-focus-field")
     vuetify.VCheckbox(
@@ -383,7 +378,7 @@ def standard_buttons():
 def update_cube_axes_visibility(cube_axes_visibility, **kwargs):
     dirty = application.viz.set_cube_axes_visibility(cube_axes_visibility)
     if dirty:
-        application.html_view3D.update()
+        ctrl.view_3D_update()
 
 def theme_mode(event):
     application.subsurface.set_theme_mode(event)
@@ -568,7 +563,7 @@ def update_representation(active_pipeline_card, current_representation, **kwargs
     dirty = application.viz.set_representation(active_pipeline_card, current_representation)
     print("representation exit ", time.time())
     if dirty:
-        application.html_view3D.update()
+        ctrl.view_3D_update()
     print("representation update geometry ", time.time())
 
 @state.change("current_opacity")
@@ -577,7 +572,7 @@ def update_opacity(active_pipeline_card, current_opacity, **kwargs):
     dirty = application.viz.set_opacity(active_pipeline_card, current_opacity)
     print("opacity exit ", time.time())
     if dirty:
-        application.html_view3D.update()
+        ctrl.view_3D_update()
     print("opacity update geometry ", time.time())
 
 # -----------------------------------------------------------------------------
@@ -727,7 +722,7 @@ def update_grid(grid, **kwargs):
     dirty_viz = application.viz.update_grid()
     if dirty_viz:
         application.viz.compute(computing=False)
-        application.html_view3D.update()
+        ctrl.view_3D_update()
 
 def reset_grid():
     application.subsurface.dirty("grid")
@@ -1530,7 +1525,7 @@ def visibility_change(event):
     dirty = application.viz.set_visibility(_pipeline, _visibility)
     if dirty:
         application.pipeline_manager.set_visible(_id, _visibility)
-        application.html_view3D.update()
+        ctrl.view_3D_update()
 
 # -----------------------------------------------------------------------------
 # UI Content Widget & Callbacks
@@ -1553,7 +1548,9 @@ def create_content(content):
                     style="position: relative",
                 ):
                     with trame.SizeObserver("x_figure_size") as x_size:
-                        x_size.add_child(application.html_viewX)
+                        html_viewX = matplotlib.Figure(figure=application.viz.update_xfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+                        ctrl.view_x_update = html_viewX.update
+
                     vuetify.VSlider(
                         label="X",
                         style="position: absolute;z-index: 1;left: 10px;right: 10px;bottom: 0;",
@@ -1567,10 +1564,11 @@ def create_content(content):
                         thumb_size="24",
                         thumb_color="blue-grey",
                     )
-                vuetify.VCol(
-                    classes="pa-0 fill-height",
-                    children=[application.html_view3D],
-                )
+                with vuetify.VCol(classes="pa-0 fill-height"):
+                    html_view3D = vtk.VtkRemoteLocalView(application.viz.getRenderWindow("view3D"), mode='local', namespace='view3D')
+                    ctrl.view_3D_update = html_view3D.update
+                    ctrl.view_3D_reset_camera = html_view3D.reset_camera
+
             with vuetify.VRow(
                 no_gutters=True,
                 classes="ma-0",
@@ -1580,8 +1578,9 @@ def create_content(content):
                     v_show="viewLayout !== 'singleView'",
                     style="position: relative; axiscolor: 'white';",
                 ):
-                    with trame.SizeObserver("y_figure_size") as y_size:
-                        y_size.add_child(application.html_viewY)
+                    with trame.SizeObserver("y_figure_size"):
+                        html_viewY = matplotlib.Figure(figure=application.viz.update_yfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+                        ctrl.view_y_update = html_viewY.update
                     vuetify.VSlider(
                         label="Y",
                         style="position: absolute;z-index: 1;left: 10px;right: 10px;bottom: 0;",
@@ -1600,8 +1599,10 @@ def create_content(content):
                     v_show="viewLayout !== 'singleView'",
                     style="position: relative",
                 ):
-                    with trame.SizeObserver("z_figure_size") as z_size:
-                        z_size.add_child(application.html_viewZ)
+                    with trame.SizeObserver("z_figure_size"):
+                        html_viewZ = matplotlib.Figure(figure=application.viz.update_zfig(), style="position: absolute;left: 50%;top: 0px;transform: translateX(-50%);")
+                        ctrl.view_z_update = html_viewZ.update
+
                     vuetify.VSlider(
                         label="Z",
                         style="position: absolute;z-index: 1;left: 10px;right: 10px;bottom: 0;",
@@ -1619,27 +1620,27 @@ def create_content(content):
 
 @state.change("slice_x")
 def update_slice_x(slice_x, **kwargs):
-    application.html_viewX.update(figure=application.viz.update_xfig(**x_fig_state.size,cell_number=[slice_x]))
+    ctrl.view_x_update(figure=application.viz.update_xfig(**x_fig_state.size,cell_number=[slice_x]))
 
 @state.change("x_figure_size")
 def update_viewX(**kwargs):
-    application.html_viewX.update(figure=application.viz.update_xfig(**x_fig_state.size, cell_number=state.slice_x))
+    ctrl.view_x_update(figure=application.viz.update_xfig(**x_fig_state.size, cell_number=state.slice_x))
 
 @state.change("slice_y")
 def update_slice_y(slice_y, **kwargs):
-    application.html_viewY.update(figure=application.viz.update_yfig(**y_fig_state.size,cell_number=[slice_y]))
+    ctrl.view_y_update(figure=application.viz.update_yfig(**y_fig_state.size,cell_number=[slice_y]))
 
 @state.change("y_figure_size")
 def update_viewY(**kwargs):
-    application.html_viewY.update(figure=application.viz.update_yfig(**y_fig_state.size, cell_number=state.slice_y))
+    ctrl.view_y_update(figure=application.viz.update_yfig(**y_fig_state.size, cell_number=state.slice_y))
 
 @state.change("slice_z")
 def update_slice_z(slice_z, **kwargs):
-    application.html_viewZ.update(figure=application.viz.update_zfig(**z_fig_state.size,cell_number=[slice_z]))
+   ctrl.view_z_update(figure=application.viz.update_zfig(**z_fig_state.size,cell_number=[slice_z]))
 
 @state.change("z_figure_size")
 def update_viewZ(**kwargs):
-    application.html_viewZ.update(figure=application.viz.update_zfig(**z_fig_state.size, cell_number=state.slice_z))
+    ctrl.view_z_update(figure=application.viz.update_zfig(**z_fig_state.size, cell_number=state.slice_z))
 
 # -----------------------------------------------------------------------------
 # GUI Layout
