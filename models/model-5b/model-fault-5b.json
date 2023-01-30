@@ -1,0 +1,1093 @@
+[
+  {
+    "action": "APP_GRID_UPDATE",
+    "arg": {
+      "extent": [
+        0,
+        1000,
+        0,
+        1000,
+        -1000,
+        0
+      ],
+      "resolution": [
+        50,
+        50,
+        50
+      ]
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "series1",
+      "feature": "Erosion",
+      "order": 1
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "fault_series1",
+      "feature": "Fault",
+      "order": 2
+    }
+  },
+  {
+    "action": "APP_STACK_ADD",
+    "arg": {
+      "name": "fault_series2",
+      "feature": "Fault",
+      "order": 3
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "rock1",
+      "order": 0,
+      "stackname": "series1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "rock2",
+      "order": 1,
+      "stackname": "series1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "rock3",
+      "order": 2,
+      "stackname": "series1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "rock4",
+      "order": 3,
+      "stackname": "series1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "fault1",
+      "order": 0,
+      "stackname": "fault_series1"
+    }
+  },
+  {
+    "action": "APP_SURFACE_ADD",
+    "arg": {
+      "name": "fault2",
+      "order": 0,
+      "stackname": "fault_series2"
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        500,
+        500,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        500,
+        200,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        500,
+        800,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        550,
+        200,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        550,
+        500,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        550,
+        800,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        600,
+        200,
+        -500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        600,
+        500,
+        -500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        600,
+        800,
+        -500
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        300,
+        200,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        300,
+        500,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        300,
+        800,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        350,
+        200,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        350,
+        500,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        350,
+        800,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        400,
+        800,
+        -800
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        400,
+        500,
+        -800
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        400,
+        200,
+        -800
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        400,
+        200,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        100,
+        500,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        100,
+        800,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        100,
+        200,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        200,
+        200,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        200,
+        500,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        200,
+        800,
+        -550
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        800,
+        200,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        800,
+        500,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        800,
+        800,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        900,
+        200,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        900,
+        500,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        900,
+        800,
+        -525
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        400,
+        500,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        400,
+        800,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        400,
+        800,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        100,
+        200,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        100,
+        500,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        100,
+        800,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        200,
+        200,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        200,
+        500,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        200,
+        800,
+        -600
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        800,
+        200,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        800,
+        500,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        800,
+        800,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        900,
+        500,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        900,
+        200,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        900,
+        800,
+        -575
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        400,
+        200,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        400,
+        500,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        200,
+        800,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        200,
+        500,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        200,
+        200,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        100,
+        500,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        100,
+        800,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        100,
+        200,
+        -650
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        900,
+        200,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        900,
+        500,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        900,
+        800,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        800,
+        200,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        800,
+        500,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        800,
+        800,
+        -625
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        100,
+        200,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        100,
+        500,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        100,
+        800,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        200,
+        200,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        200,
+        500,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        200,
+        800,
+        -700
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        900,
+        200,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        900,
+        500,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        900,
+        800,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        800,
+        200,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        800,
+        500,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_POINT_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        800,
+        800,
+        -675
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "fault2",
+      "xyz": [
+        550,
+        500,
+        -600
+      ],
+      "poleVector": [
+        -0.8949343616010249,
+        9.576199963080072e-18,
+        0.4461978131108091
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "fault1",
+      "xyz": [
+        350,
+        500,
+        -700
+      ],
+      "poleVector": [
+        0.8949343616030251,
+        1.0000547989250692e-12,
+        0.4461978131108087
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        400,
+        500,
+        -625
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        150,
+        500,
+        -550
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock4",
+      "xyz": [
+        850,
+        500,
+        -525
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        400,
+        500,
+        -675
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        150,
+        500,
+        -600
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock3",
+      "xyz": [
+        850,
+        500,
+        -575
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        850,
+        500,
+        -625
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock2",
+      "xyz": [
+        150,
+        500,
+        -650
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        150,
+        500,
+        -700
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SURFACE_ORIENTATION_ADD",
+    "arg": {
+      "name": "rock1",
+      "xyz": [
+        850,
+        500,
+        -675
+      ],
+      "poleVector": [
+        1e-12,
+        1e-12,
+        1.000000000001
+      ]
+    }
+  },
+  {
+    "action": "APP_SLICE_ORIGIN_UPDATE",
+    "arg": {
+      "force": false,
+      "origin": [
+        500,
+        500,
+        -500
+      ]
+    }
+  },
+  {
+    "action": "APP_COMPUTE_INTERPOLATION"
+  },
+  {
+    "action": "VIEW_RESET_CAMERA"
+  }
+]

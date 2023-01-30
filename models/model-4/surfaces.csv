@@ -1,0 +1,6 @@
+formation,order,stack
+rock3,0,left_series
+onlap_surface,0,onlap_series
+rock2,0,right_series
+rock1,1,right_series
+seafloor,0,seafloor_series

@@ -1,0 +1,9 @@
+formation,order,stack
+Fault_1,0,Fault_1
+Fault_2,0,Fault_2
+Gneiss,0,Strat_Series
+Schist,1,Strat_Series
+Sandstone_2,2,Strat_Series
+Shale,3,Strat_Series
+Siltstone,4,Strat_Series
+Sandstone,5,Strat_Series

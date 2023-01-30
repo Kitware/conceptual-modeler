@@ -1,0 +1,2 @@
+xmin,xmax,ymin,ymax,zmin,zmax,nx,ny,nz
+-200,1000,-500,500,-1000,0,50,50,50
