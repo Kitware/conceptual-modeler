@@ -50,6 +50,7 @@ def create_toolbar(ctrl):
     run_button()
     import_button()
     export_button()
+    save_simulation_grid_button()
     vuetify.VDivider(vertical=True, classes="mx-2")
     view_buttons()
     vuetify.VDivider(vertical=True, classes="mx-2")
@@ -167,6 +168,17 @@ def export_button():
         color="success",
         on_icon="mdi-arrow-down-bold-box-outline",
         off_icon="mdi-arrow-down-bold-box-outline",
+        classes="mx-1",
+        hide_details=True,
+        dense=True,
+    )
+
+def save_simulation_grid_button():
+    vuetify.VCheckbox(
+        v_model=("save_simulation_grid", False),
+        color="success",
+        on_icon="mdi-content-save",
+        off_icon="mdi-content-save",
         classes="mx-1",
         hide_details=True,
         dense=True,
