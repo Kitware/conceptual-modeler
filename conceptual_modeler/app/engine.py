@@ -107,6 +107,7 @@ class MyBusinessLogic:
         ctrl.update_zfig = self._viz.update_zfig
         ctrl.viz_update_grid = self._viz.update_grid
         ctrl.viz_update_topography = self._viz.update_topography
+        ctrl.save_simulation_grid = self._viz.save_simulation_grid
 
     def push_state(self, key, value):
         state = self._server.state
@@ -273,11 +274,18 @@ def initialize(server):
         state.importFile = None
 
     @state.change("export_state")
-    def export_state(**kwargs):
+    def export_state(export_state, **kwargs):
         print(">>> ENGINE: Exporting model...")
         if export_state:
             # TODO: Export state
             state.export_state = False
+
+    @state.change("save_simulation_grid")
+    def save_simulation_grid(save_simulation_grid, **kwargs):
+        print(">>> ENGINE: Saving grid for simulation...")
+        if save_simulation_grid:
+            ctrl.save_simulation_grid()
+            state.save_simulation_grid = False
 
     @state.change("cube_axes_visibility")
     def update_cube_axes_visibility(cube_axes_visibility, **kwargs):

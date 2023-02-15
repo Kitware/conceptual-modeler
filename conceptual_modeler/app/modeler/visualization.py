@@ -1,4 +1,8 @@
 from collections import defaultdict
+import numpy as np
+
+from parflow.tools.io import write_pfb
+from vtkmodules.numpy_interface import dataset_adapter as dsa
 
 from vtkmodules.vtkCommonCore import (
     vtkFloatArray, 
@@ -27,6 +31,7 @@ from vtkmodules.vtkFiltersSources import (
     vtkArrowSource,
     vtkSphereSource,
 )
+from vtkmodules.vtkIOXML import vtkXMLImageDataWriter
 from vtkmodules.vtkRenderingCore import (
     vtkActor,
     vtkDataSetMapper,
@@ -1224,6 +1229,46 @@ class VtkViewer:
             self._litho_field.Modified()
             self._filter_threshold.Update()
             self.field_ready = True
+
+    def save_simulation_grid(self):
+        '''
+        Move all layers up so that the surface alligns with the top of the domain.
+        The new array is litho_top.
+        '''
+        dims = self._grid.GetDimensions()
+        print(">>> VISUALIZATiON: Converting grid...")
+        grid = dsa.WrapDataObject(self._grid)
+        # we have one less cells than points along one dimension
+        dims = [i - 1 for i in dims]
+        litho = grid.CellData['litho'].reshape(dims, order='F')
+        height = np.tile(np.arange(dims[2]).transpose(), (dims[0], dims[1], 1))
+        air2d = np.count_nonzero(litho == -1, axis=2)
+        air = np.tile(air2d.reshape(dims[0], dims[1], 1), (1, 1, dims[2]))
+        # shift height up so that the surface is at the top
+        height_top = np.mod(height - air, dims[2])
+        # shift litho so that the surface is at the top
+        xi,yi,_ = np.indices((dims[0],dims[1],dims[2]))
+        litho_top = litho[xi, yi, height_top]
+        # compute DEM
+        disp2d = height_top[:,:,dims[2] - 1]
+        min_disp2d = np.amin(disp2d)
+        disp2d = disp2d - min_disp2d
+        disp = np.tile(disp2d, (1, 1, dims[2]))
+
+        print(">>> VISUALIZATiON: Saving grid...")
+        dx, dy, dz = self._grid.GetSpacing()
+        litho_top_float64 = litho_top.astype(dtype=np.float64)
+        write_pfb('grid.pfb', litho_top_float64, dx=dx, dy=dy, dz=dz)
+
+        # # add additional fields to dataset
+        # grid.CellData.append(litho_top.reshape(
+        #     (dims[0]*dims[1]*dims[2],), order='F'), 'litho_top')
+        # grid.CellData.append(disp.reshape(
+        #     (dims[0]*dims[1]*dims[2],), order='F'), 'disp')
+        # writer = vtkXMLImageDataWriter()
+        # writer.SetFileName("grid.vti")
+        # writer.SetInputDataObject(self._grid)
+        # writer.Write()
 
     def update_lut(self):
         item = self._view.get("grid")
