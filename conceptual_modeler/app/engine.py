@@ -285,6 +285,7 @@ def initialize(server):
         print(">>> ENGINE: Saving grid for simulation...")
         if save_simulation_grid:
             ctrl.save_simulation_grid()
+            state.simulation_grid_saved_alert = True
             state.save_simulation_grid = False
 
     @state.change("cube_axes_visibility")
