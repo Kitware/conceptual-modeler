@@ -1258,7 +1258,7 @@ class VtkViewer:
         print(">>> VISUALIZATiON: Saving grid...")
         dx, dy, dz = self._grid.GetSpacing()
         litho_top_float64 = litho_top.astype(dtype=np.float64)
-        write_pfb('grid.pfb', litho_top_float64, dx=dx, dy=dy, dz=dz)
+        write_pfb('grid.pfb', litho_top_float64, dx=dx, dy=dy, dz=dz, z_first=False)
 
         # # add additional fields to dataset
         # grid.CellData.append(litho_top.reshape(
