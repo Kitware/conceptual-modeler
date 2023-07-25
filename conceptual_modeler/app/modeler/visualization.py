@@ -1250,17 +1250,22 @@ class VtkViewer:
         xi,yi,_ = np.indices((dims[0],dims[1],dims[2]))
         litho_top = litho[xi, yi, height_top]
         # compute DEM
-        disp2d = height_top[:,:,dims[2] - 1]
-        min_disp2d = np.amin(disp2d)
-        disp2d = disp2d - min_disp2d
-        disp = np.tile(disp2d, (1, 1, dims[2]))
+        dem = height_top[:,:,dims[2] - 1]
+        min_dem = np.amin(dem)
+        dem = dem - min_dem
+        print('dem shape: {}'.format(dem.shape))
+        disp = np.tile(dem, (1, 1, dims[2]))
 
         print(">>> VISUALIZATiON: Saving grid...")
         dx, dy, dz = self._grid.GetSpacing()
         litho_top_float64 = litho_top.astype(dtype=np.float64)
-        write_pfb('grid.pfb', litho_top_float64, dx=dx, dy=dy, dz=dz)
+        write_pfb('grid.pfb', litho_top_float64, dx=dx, dy=dy, dz=dz, z_first=False)
 
-        # # add additional fields to dataset
+        dem_float64 = dem.reshape(dims[0], dims[1], 1).astype(dtype=np.float64)
+        print('dem shape: {}'.format(dem_float64.shape))
+        write_pfb('dem.pfb', dem_float64, dx=dx, dy=dy, dz=dz, z_first=False)
+
+        # add additional fields to dataset
         # grid.CellData.append(litho_top.reshape(
         #     (dims[0]*dims[1]*dims[2],), order='F'), 'litho_top')
         # grid.CellData.append(disp.reshape(

@@ -47,6 +47,9 @@ def create_toolbar(ctrl):
     vuetify.VSpacer()
     workflow_buttons()
     vuetify.VSpacer()
+    vuetify.VAlert("Simulation grid saved",
+                   v_model=("simulation_grid_saved_alert", False),
+                   type='Success', dismissible=True)
     run_button()
     import_button()
     export_button()
