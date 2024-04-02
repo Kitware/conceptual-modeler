@@ -45,12 +45,22 @@ def initialize(server):
 
 def create_toolbar(ctrl):
     vuetify.VSpacer()
+    vuetify.VAlert("Demonstration model uploaded",
+                   v_model=("demo_state_alert", False),
+                   type='Success', dismissible=True)
     workflow_buttons()
     vuetify.VSpacer()
+    vuetify.VAlert("Import model uploaded",
+                   v_model=("import_state_alert", False),
+                   type='Success', dismissible=True)
+    vuetify.VAlert("Model exported",
+                   v_model=("export_state_alert", False),
+                   type='Success', dismissible=True)
     vuetify.VAlert("Simulation grid saved",
                    v_model=("simulation_grid_saved_alert", False),
                    type='Success', dismissible=True)
     run_button()
+    demo_button()
     import_button()
     export_button()
     save_simulation_grid_button()
@@ -140,6 +150,22 @@ def run_button():
         hide_details=True,
         dense=True,
         disabled=("run_button", False),
+    )
+
+# -----------------------------------------------------------------------------
+# Demo Button
+# -----------------------------------------------------------------------------
+
+def demo_button():
+    vuetify.VCheckbox(
+        v_show=("data_available", False),
+        v_model=("demo_state", False),
+        color="success",
+        on_icon="mdi-lightning-bolt-circle",
+        off_icon="mdi-lightning-bolt-circle",
+        classes="mx-1",
+        hide_details=True,
+        dense=True,
     )
 
 # -----------------------------------------------------------------------------

@@ -7,7 +7,6 @@ def _reload():
     dev.reload(ui)
     ui.initialize(server)
 
-
 def main(server=None, **kwargs):
     # Get or create server
     if server is None:
@@ -16,16 +15,17 @@ def main(server=None, **kwargs):
     if isinstance(server, str):
         server = get_server(server)
 
+    # Set client type
+    server.client_type = "vue2"
+
     # Make UI auto reload
     server.controller.on_server_reload.add(_reload)
 
-    # Init application
     engine.initialize(server)
     ui.initialize(server)
 
     # Start server
     server.start(**kwargs)
-
 
 if __name__ == "__main__":
     main()

@@ -4,6 +4,8 @@ Define your classes and create the instances that you need to expose
 import logging
 import time
 
+from pathlib import Path
+
 from . import pipeline_manager as pm
 from . import matplotlib_manager as mm
 
@@ -40,10 +42,17 @@ TOPOGRAPHY_CATEGORY = {"random": 0, "gdal": 1, "saved": 2}
 # Engine class
 # ---------------------------------------------------------
 
-class MyBusinessLogic:
+class ApplicationLogic:
     def __init__(self, server):
         self._server = server
 
+        # CLI
+        self._server.cli.add_argument(
+            "--data",
+            help="File to load",
+            dest="data",
+            default=None,
+        )
         # initialize state + controller
         state, ctrl = server.state, server.controller
 
@@ -218,7 +227,6 @@ class MyBusinessLogic:
         print(">>> ENGINE: SS move...")
         self._subsurface.move(type, direction)
 
-
     def ss_new(self, type, data):
         state = self._server.state
 
@@ -264,6 +272,7 @@ def initialize(server):
         print(">>> ENGINE: Importing model...")
         if import_model_file:
             ctrl.parse_zip_file(import_model_file)
+            state.import_state_alert = True
             state.import_state = False
             state.import_model_file = None
 
@@ -273,11 +282,24 @@ def initialize(server):
             ctrl.import_data(importType, importFile)
         state.importFile = None
 
+    @state.change("demo_state")
+    def import_demo(demo_state, **kwargs):
+        args, _ = server.cli.parse_known_args()
+        if args.data:
+            state.data_available = True
+        print(">>> ENGINE: Importing demonstration model...")
+        if demo_state:
+            demo_file = dict(content = Path(args.data).read_bytes(), _filter = ['content'])
+            ctrl.parse_zip_file(demo_file)
+            state.demo_state_alert = True
+            state.demo_state = False
+
     @state.change("export_state")
     def export_state(export_state, **kwargs):
         print(">>> ENGINE: Exporting model...")
         if export_state:
             # TODO: Export state
+            state.export_state_alert = True
             state.export_state = False
 
     @state.change("save_simulation_grid")
@@ -406,5 +428,5 @@ def initialize(server):
     ctrl.on_server_ready.add(protocols_ready)
     ctrl.on_server_ready.add(ctrl.view_3D_update)
 
-    engine = MyBusinessLogic(server)
+    engine = ApplicationLogic(server)
     return engine
