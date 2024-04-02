@@ -1,5 +1,5 @@
 trame: # Default app under /index.html
-  app: air-sans
+  app: conceptual-modeler
   args:
-    - --data
-    - /local-app/data
+    - --data 
+    - /local-app/data/model-1a.zip
